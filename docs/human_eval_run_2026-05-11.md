@@ -86,3 +86,51 @@ QA assertion failures: 0
 .env 파싱, prefix, 따옴표 문제는 확인되지 않았다.
 OpenAI API 서버가 해당 키를 invalid_api_key로 거절하고 있으므로, 현재 남은 원인은 키 자체가 폐기/오입력/비활성 상태인 경우가 가장 유력하다.
 ```
+
+## Root Cause and Fix
+
+작성일: 2026-05-11
+
+추가 확인에서 상위 프로세스 환경변수의 `OPENAI_API_KEY`와 `.env`의 `OPENAI_API_KEY`가 서로 다르다는 점을 확인했습니다.
+
+```text
+env_before_present: true
+env_equals_file: false
+file_prefix_ok: true
+```
+
+기존 `load_env_file()`은 이미 같은 이름의 환경변수가 있으면 `.env` 값을 덮어쓰지 않았습니다. 따라서 CLI는 `.env`의 정상 키가 아니라 상위 환경에 남아 있던 오래된/잘못된 키로 OpenAI를 호출하고 있었습니다.
+
+수정:
+
+```text
+assist_request()에서 load_env_file(override_existing=True)를 사용하도록 변경했다.
+로컬 MVP 실행에서는 프로젝트 .env가 상위 프로세스 환경변수보다 우선한다.
+```
+
+수정 후 실행:
+
+```bash
+python -m src.main run --input data/sample_requests.csv --config config --output outputs/human_eval_llm_assist_fixed --dry-run --gold data/labeled_requests.csv --enable-llm-assist
+```
+
+결과:
+
+```text
+llm_used: 25
+llm_errors: 0
+llm_assist_not_needed: 5
+QA assertion failures: 0
+```
+
+정량 지표:
+
+```text
+request_type_accuracy: 100.0%
+target_team_accuracy: 100.0%
+priority_accuracy: 100.0%
+risk_level_accuracy: 100.0%
+decision_accuracy: 70.0%
+false_automation_rate: 0.0%
+review_recall: 100.0%
+```

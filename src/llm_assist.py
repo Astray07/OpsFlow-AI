@@ -52,7 +52,7 @@ def assist_request(
 ) -> LlmAssistResult:
     """Run optional LLM assist or return a deterministic skipped trace."""
 
-    load_env_file()
+    load_env_file(override_existing=True)
     input_text = privacy_result.masked_text if privacy_result.pii_detected else raw_request.raw_text
     requested = should_use_llm_assist(evaluation, automation_decision)
     use_llm = _llm_enabled(enabled) and requested
@@ -165,7 +165,11 @@ def _assist_with_openai(
     )
 
 
-def load_env_file(path: str | Path = ".env") -> None:
+def load_env_file(
+    path: str | Path = ".env",
+    *,
+    override_existing: bool = False,
+) -> None:
     """Load simple KEY=VALUE entries from .env without exposing values."""
 
     env_path = Path(path)
@@ -178,7 +182,7 @@ def load_env_file(path: str | Path = ".env") -> None:
             continue
         key, value = stripped.split("=", 1)
         key = key.strip()
-        if not key or key in os.environ:
+        if not key or (key in os.environ and not override_existing):
             continue
         os.environ[key] = _strip_quotes(value.strip())
 

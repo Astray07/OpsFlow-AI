@@ -69,6 +69,7 @@ OPENAI_API_KEY=<key>
 ```
 
 PII가 감지된 요청은 LLM assist 계층에 `raw_text`가 아니라 `masked_text`만 전달하도록 구현되어 있습니다.
+CLI 실행에서는 프로젝트 로컬 `.env` 값이 상위 프로세스에 남아 있는 같은 이름의 환경변수보다 우선합니다.
 
 LLM assist 실행:
 

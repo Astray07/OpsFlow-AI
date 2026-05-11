@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from src.decision import decide_automation
 from src.llm_assist import assist_request, load_env_file, should_use_llm_assist
@@ -61,3 +62,18 @@ def test_env_example_uses_supported_llm_variable_names(monkeypatch) -> None:
 
     assert "OPSFLOW_LLM_MODEL" in os.environ
     assert "OPS_FLOW_MODEL" not in os.environ
+
+
+def test_load_env_file_can_override_inherited_environment(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text("OPENAI_API_KEY=sk-from-file\n", encoding="utf-8")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-from-parent")
+
+    load_env_file(env_path)
+    assert os.environ["OPENAI_API_KEY"] == "sk-from-parent"
+
+    load_env_file(env_path, override_existing=True)
+    assert os.environ["OPENAI_API_KEY"] == "sk-from-file"
