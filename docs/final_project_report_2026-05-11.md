@@ -43,21 +43,7 @@
 
 OpsFlow AI는 하나의 모델 호출 결과에 의존하지 않습니다. 먼저 rule-first 파이프라인으로 재현 가능한 판단을 만들고, LLM assist는 요약과 확인 질문을 보조하는 계층으로 제한했습니다.
 
-```mermaid
-flowchart LR
-  A["CSV/JSONL 요청"] --> B["PII Masking"]
-  B --> C["Rule-first 분류와 필드 추출"]
-  C --> D["Priority / Risk 계산"]
-  D --> E["Automation Decision"]
-  E --> F["Ticket Draft"]
-  E --> G["Review Queue"]
-  E --> H["Execution Trace"]
-  F --> I["GitHub Dry-run Payload"]
-  G --> J["Masked Export"]
-  H --> K["QA / Evaluation Report"]
-  C -.-> L["Structured LLM Assist"]
-  L -.-> F
-```
+![OpsFlow AI Architecture](assets/opsflow_architecture_2026-05-11.png)
 
 이 구조를 선택한 이유는 운영 자동화에서 "왜 이 요청이 review_required인지", "어떤 개인정보가 마스킹됐는지", "외부 등록 후보에 들어가도 되는지"가 항상 설명 가능해야 하기 때문입니다. 그래서 결정 계층은 rule과 policy로 고정하고, LLM assist는 본문 품질을 높이는 보조 계층으로만 사용했습니다.
 
