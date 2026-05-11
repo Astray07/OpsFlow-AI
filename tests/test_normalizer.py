@@ -1,7 +1,9 @@
+from dataclasses import replace
 from pathlib import Path
 
 import src.normalizer as normalizer_module
 from src.normalizer import normalize_request, normalize_requests
+from src.privacy import load_privacy_config
 from src.schema import AutomationDecision, ProcessingStatus, RawRequest, RequestType, RiskLevel
 
 
@@ -50,6 +52,27 @@ def test_normalize_request_uses_pii_masking_and_medium_risk() -> None:
     assert "010-1234-5678" not in (normalized_request.suggested_ticket_title or "")
     assert normalized_request.risk_level == RiskLevel.MEDIUM
     assert "medium.pii_detected" in trace.risk_eval.matched_rules
+
+
+def test_normalize_request_uses_privacy_configured_pii_min_risk() -> None:
+    privacy_config = load_privacy_config()
+    privacy_config = replace(
+        privacy_config,
+        policy={**privacy_config.policy, "pii_detected_min_risk_level": "high"},
+    )
+    raw_request = RawRequest(
+        request_id="REQ-NORMALIZE-PII-HIGH",
+        channel="form",
+        raw_text="010-1234-5678 고객에게 연락처 확인 안내를 보내주세요.",
+    )
+
+    normalized_request, trace = normalize_request(
+        raw_request,
+        privacy_config=privacy_config,
+    )
+
+    assert normalized_request.risk_level == RiskLevel.HIGH
+    assert "high.pii_detected" in trace.risk_eval.matched_rules
 
 
 def test_normalize_requests_loads_config_once_for_batch() -> None:

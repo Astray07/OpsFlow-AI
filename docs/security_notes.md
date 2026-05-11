@@ -34,6 +34,17 @@ OPSFLOW_ENV=local
 OPSFLOW_DOTENV_OVERRIDE=1
 ```
 
+LLM 모델명 변수는 `OPSFLOW_LLM_MODEL`입니다. 유사한 `OPS_FLOW_MODEL` 이름은 코드에서 읽지 않습니다.
+
+## Output Boundary
+
+```text
+1. PII 감지 시 LLM 입력, execution log, ticket body, generated summary, extracted fields는 masked_text 기준 값을 사용합니다.
+2. review_queue.csv의 raw_text 컬럼은 reviewer가 원문 맥락을 확인할 수 있도록 로컬 산출물에만 보존합니다.
+3. review_queue.csv를 외부 공유하거나 포트폴리오 첨부자료로 사용할 때는 masked_text 기준으로 별도 export합니다.
+4. LLM assist는 request_type, target_team, priority, risk_level, automation_decision을 덮어쓰지 않습니다.
+```
+
 ## Production Guidance
 
 ```text

@@ -104,6 +104,7 @@ def evaluate_request(
     config: RuleEngineConfig | None = None,
     *,
     pii_detected: bool = False,
+    pii_min_risk_level: RiskLevel | str | None = RiskLevel.MEDIUM,
 ) -> RuleEngineEvaluation:
     """Evaluate one raw request with config-driven rules."""
 
@@ -123,6 +124,7 @@ def evaluate_request(
         top_type.type,
         active_config,
         pii_detected=pii_detected,
+        pii_min_risk_level=pii_min_risk_level,
         missing_fields=missing_fields,
     )
 
@@ -453,12 +455,14 @@ def calculate_risk_level(
     config: RuleEngineConfig,
     *,
     pii_detected: bool = False,
+    pii_min_risk_level: RiskLevel | str | None = RiskLevel.MEDIUM,
     missing_fields: list[str] | None = None,
 ) -> tuple[RiskLevel, list[str]]:
     """Calculate risk level with highest matched level winning."""
 
     _validate_risk_matching_semantics(config)
     matched_rules: list[str] = []
+    pii_min_risk = _coerce_risk_level(pii_min_risk_level)
 
     high_rule = config.risk_rules.get("high", {})
     if request_type.value in high_rule.get("request_types", []):
@@ -480,6 +484,8 @@ def calculate_risk_level(
         high_rule.get("internal_ops_side_effect_keywords", []),
     ):
         matched_rules.append("high.internal_ops.side_effect")
+    if pii_detected and pii_min_risk == RiskLevel.HIGH:
+        matched_rules.append("high.pii_detected")
     if matched_rules:
         return RiskLevel.HIGH, matched_rules
 
@@ -498,12 +504,15 @@ def calculate_risk_level(
         )
     ):
         medium_matches.append("medium.enterprise_context")
-    if pii_detected:
+    if pii_detected and pii_min_risk == RiskLevel.MEDIUM:
         medium_matches.append("medium.pii_detected")
     if medium_matches:
         return RiskLevel.MEDIUM, medium_matches
 
-    return RiskLevel.LOW, ["low.default"]
+    low_matches = ["low.default"]
+    if pii_detected and pii_min_risk == RiskLevel.LOW:
+        low_matches.append("low.pii_detected")
+    return RiskLevel.LOW, low_matches
 
 
 def _load_yaml_mapping(path: Path) -> dict[str, Any]:
@@ -639,6 +648,14 @@ def _validate_risk_matching_semantics(config: RuleEngineConfig) -> None:
         raise ValueError("Unsupported risk within_same_bucket matching semantics")
     if semantics.get("between_buckets") != "OR":
         raise ValueError("Unsupported risk between_buckets matching semantics")
+
+
+def _coerce_risk_level(value: RiskLevel | str | None) -> RiskLevel:
+    if value is None:
+        return RiskLevel.MEDIUM
+    if isinstance(value, RiskLevel):
+        return value
+    return RiskLevel(str(value).strip().lower())
 
 
 def _clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:

@@ -1,4 +1,4 @@
-from src.decision import decide_automation, load_automation_policy
+from src.decision import AutomationPolicy, decide_automation, load_automation_policy
 from src.rule_engine import RuleEngineEvaluation
 from src.schema import (
     AutomationDecision,
@@ -159,3 +159,32 @@ def test_reject_precedes_review_for_policy_blocked_unsafe_request() -> None:
     assert result.needs_review is True
     assert result.review_reason == "policy_blocked; unsafe_or_disallowed_request"
     assert len(result.evaluated_decisions) == 1
+
+
+def test_reject_keywords_are_loaded_from_policy_config() -> None:
+    raw_request = RawRequest(
+        request_id="REQ-CONFIG-REJECT",
+        raw_text="이 요청은 실험 정책상 차단 문구입니다.",
+    )
+    evaluation = make_evaluation(
+        request_type=RequestType.OTHER,
+        request_type_confidence=0.5,
+        target_team=Team.UNASSIGNED,
+        target_team_confidence=1.0,
+        risk_level=RiskLevel.HIGH,
+    )
+    base_policy = load_automation_policy()
+    rules = {decision: dict(rule) for decision, rule in base_policy.rules.items()}
+    rules[AutomationDecision.REJECT]["trigger_keywords"] = {
+        "policy_blocked": ["실험 정책상 차단"],
+    }
+    policy = AutomationPolicy(
+        version=base_policy.version,
+        decision_order=list(base_policy.decision_order),
+        rules=rules,
+    )
+
+    result = decide_automation(raw_request, evaluation, policy)
+
+    assert result.automation_decision == AutomationDecision.REJECT
+    assert result.review_reason == "policy_blocked"

@@ -21,21 +21,6 @@ RISK_ORDER = {
     RiskLevel.MEDIUM: 1,
     RiskLevel.HIGH: 2,
 }
-UNSAFE_OR_DISALLOWED_KEYWORDS = (
-    "개인정보 원문",
-    "원문을 추출",
-    "보안 우회",
-    "토큰 원문",
-    "비밀번호 원문",
-    "password",
-    "credential",
-    "secret",
-)
-POLICY_BLOCKED_KEYWORDS = (
-    "자동화하지 말고",
-    "자동화 금지",
-    "직접 확인해야",
-)
 
 
 @dataclass(frozen=True)
@@ -135,7 +120,7 @@ def _evaluate_decision_step(
     pii_detected: bool,
 ) -> tuple[bool, list[str]]:
     if decision == AutomationDecision.REJECT:
-        triggers = _reject_triggers(raw_request, evaluation)
+        triggers = _reject_triggers(raw_request, evaluation, policy)
         return bool(triggers), triggers
 
     if decision == AutomationDecision.REVIEW_REQUIRED:
@@ -155,23 +140,47 @@ def _evaluate_decision_step(
     return False, []
 
 
-def _reject_triggers(raw_request: RawRequest, evaluation: RuleEngineEvaluation) -> list[str]:
+def _reject_triggers(
+    raw_request: RawRequest,
+    evaluation: RuleEngineEvaluation,
+    policy: AutomationPolicy,
+) -> list[str]:
     text = raw_request.raw_text.casefold()
     triggers: list[str] = []
+    configured_triggers = set(policy.rules[AutomationDecision.REJECT].get("triggers", []))
+    trigger_keywords = policy.rules[AutomationDecision.REJECT].get("trigger_keywords", {})
 
     if evaluation.request_type == RequestType.OTHER and _matches_any(
         text,
-        ("지원하지 않는 요청", "처리 불가", "unsupported"),
-    ):
+        _configured_keywords(trigger_keywords, "unsupported_request_type"),
+    ) and "unsupported_request_type" in configured_triggers:
         triggers.append("unsupported_request_type")
 
-    if _matches_any(text, POLICY_BLOCKED_KEYWORDS):
+    if _matches_any(
+        text,
+        _configured_keywords(trigger_keywords, "policy_blocked"),
+    ) and "policy_blocked" in configured_triggers:
         triggers.append("policy_blocked")
 
-    if _matches_any(text, UNSAFE_OR_DISALLOWED_KEYWORDS):
+    if _matches_any(
+        text,
+        _configured_keywords(trigger_keywords, "unsafe_or_disallowed_request"),
+    ) and "unsafe_or_disallowed_request" in configured_triggers:
         triggers.append("unsafe_or_disallowed_request")
 
     return list(dict.fromkeys(triggers))
+
+
+def _configured_keywords(
+    trigger_keywords: Any,
+    trigger: str,
+) -> tuple[str, ...]:
+    if not isinstance(trigger_keywords, Mapping):
+        return ()
+    keywords = trigger_keywords.get(trigger, [])
+    if not isinstance(keywords, list):
+        return ()
+    return tuple(keyword for keyword in keywords if isinstance(keyword, str))
 
 
 def _review_required_triggers(

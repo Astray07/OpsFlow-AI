@@ -1,3 +1,4 @@
+import builtins
 import os
 from pathlib import Path
 
@@ -57,6 +58,71 @@ def test_assist_request_uses_masked_text_for_pii_when_llm_is_skipped() -> None:
     assert result.input_text == "[PHONE] 고객에게 연락처 확인 안내를 보내주세요."
     assert "010-1234-5678" not in result.suggested_ticket_body
     assert result.trace.suggested_clarification is not None
+
+
+def test_assist_request_can_use_raw_text_only_when_explicitly_configured() -> None:
+    raw_request = RawRequest(
+        request_id="REQ-LLM-RAW-OVERRIDE",
+        channel="form",
+        raw_text="010-1234-5678 고객에게 연락처 확인 안내를 보내주세요.",
+    )
+    privacy_result = mask_pii(raw_request.raw_text)
+    evaluation = evaluate_request(raw_request, pii_detected=privacy_result.pii_detected)
+    decision = decide_automation(
+        raw_request,
+        evaluation,
+        pii_detected=privacy_result.pii_detected,
+    )
+
+    result = assist_request(
+        raw_request,
+        evaluation,
+        privacy_result,
+        decision.automation_decision,
+        enabled=False,
+        send_raw_text_to_llm=True,
+    )
+
+    assert result.trace.used is False
+    assert result.input_text == raw_request.raw_text
+
+
+def test_llm_import_error_falls_back_without_leaking_key(monkeypatch) -> None:
+    raw_request = RawRequest(
+        request_id="REQ-LLM-IMPORT-ERROR",
+        channel="form",
+        raw_text="010-1234-5678 고객에게 연락처 확인 안내를 보내주세요.",
+    )
+    privacy_result = mask_pii(raw_request.raw_text)
+    evaluation = evaluate_request(raw_request, pii_detected=privacy_result.pii_detected)
+    decision = decide_automation(
+        raw_request,
+        evaluation,
+        pii_detected=privacy_result.pii_detected,
+    )
+    original_import = builtins.__import__
+
+    def fail_openai_import(name, *args, **kwargs):
+        if name == "openai":
+            raise ModuleNotFoundError("No module named 'openai'")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-not-real")
+    monkeypatch.setattr(builtins, "__import__", fail_openai_import)
+
+    result = assist_request(
+        raw_request,
+        evaluation,
+        privacy_result,
+        decision.automation_decision,
+        enabled=True,
+    )
+
+    assert result.trace.used is False
+    assert result.trace.reason == "llm_assist_error_fallback"
+    assert result.trace.error == "No module named 'openai'"
+    assert "test-key-not-real" not in (result.trace.error or "")
+    assert result.input_text == "[PHONE] 고객에게 연락처 확인 안내를 보내주세요."
 
 
 def test_env_example_uses_supported_llm_variable_names(monkeypatch) -> None:

@@ -63,7 +63,7 @@ def load_privacy_config(path: str | Path = DEFAULT_PRIVACY_CONFIG_PATH) -> Priva
 
     rules = []
     for pii_type, rule_payload in masking.items():
-        if isinstance(pii_type, str) and pii_type.lower() == "person":
+        if isinstance(rule_payload, Mapping) and rule_payload.get("enabled") is False:
             continue
         rules.append(_parse_privacy_rule(pii_type, rule_payload, config_path))
     policy = payload.get("policy") or {}

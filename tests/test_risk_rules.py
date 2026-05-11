@@ -44,6 +44,25 @@ def test_pii_detected_raises_otherwise_low_risk_request_to_medium() -> None:
     assert "medium.pii_detected" in pii_evaluation.matched_risk_rules
 
 
+def test_pii_min_risk_level_is_configurable() -> None:
+    config = load_rule_engine_config()
+    raw_request = RawRequest(
+        request_id="REQ-PII-HIGH",
+        channel="form",
+        raw_text="010-1234-5678 고객에게 연락처 확인 안내를 보내주세요.",
+    )
+
+    evaluation = evaluate_request(
+        raw_request,
+        config,
+        pii_detected=True,
+        pii_min_risk_level="high",
+    )
+
+    assert evaluation.risk_level == RiskLevel.HIGH
+    assert "high.pii_detected" in evaluation.matched_risk_rules
+
+
 def test_internal_ops_side_effect_keywords_are_loaded_from_config() -> None:
     config = load_rule_engine_config()
     raw_request = RawRequest(

@@ -62,6 +62,8 @@ medium:
     - urgent
 
 low:
+  # Reserved taxonomy for future explicit side-effect scoring. Empty lists mean no
+  # low-risk side effect can currently override higher matched buckets.
   side_effects:
     draft_only: []
     read_only: []

@@ -12,6 +12,7 @@ ready_for_approval:
   min_team_confidence: 0.85
   allow_missing_fields: false
   max_risk_level: low
+  # Reserved for future real-write integrations; current MVP always writes dry-run payloads.
   external_create: false
 
 draft_only:
@@ -20,6 +21,7 @@ draft_only:
   min_team_confidence: 0.75
   allow_missing_fields: "optional_only"
   max_risk_level: medium
+  # Reserved for future approval UI; current MVP keeps drafts local.
   requires_human_approval: true
 
 review_required:
@@ -37,3 +39,21 @@ reject:
     - unsupported_request_type
     - policy_blocked
     - unsafe_or_disallowed_request
+  trigger_keywords:
+    unsupported_request_type:
+      - 지원하지 않는 요청
+      - 처리 불가
+      - unsupported
+    policy_blocked:
+      - 자동화하지 말고
+      - 자동화 금지
+      - 직접 확인해야
+    unsafe_or_disallowed_request:
+      - 개인정보 원문
+      - 원문을 추출
+      - 보안 우회
+      - 토큰 원문
+      - 비밀번호 원문
+      - password
+      - credential
+      - secret

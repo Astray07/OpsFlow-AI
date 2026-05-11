@@ -30,7 +30,7 @@ E:\AI\OpsFlow AI 프로젝트를 독립적으로 검증해 주세요.
 
 2. external seed 평가
    - data/external_seed_samples.csv 8건과 data/external_seed_labeled_requests.csv 비교 결과
-   - synthetic-only rule tuning이 external seed에도 과적합 없이 동작하는지
+   - 이 결과가 OOD 일반화가 아니라 seed 관찰 후 보강된 regression smoke test로 문서화되어 있는지
 
 3. 보안/PII 경계
    - LLM 입력, execution_log, ticket body, generated summary, extracted fields에서 PII masking이 유지되는지

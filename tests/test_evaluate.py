@@ -24,9 +24,10 @@ def test_evaluate_predictions_compares_pipeline_output_to_gold(tmp_path: Path) -
     assert report.compared == 30
     assert report.request_type_accuracy >= 0.95
     assert report.target_team_accuracy >= 0.95
+    assert report.decision_accuracy >= 0.65
     assert report.false_automation_rate == 0.0
+    assert report.over_automation_rate <= 0.25
     assert report.review_recall >= 0.95
-    assert 0.0 <= report.over_automation_rate <= 1.0
     assert len(report.threshold_rows) == 3
 
 
@@ -67,6 +68,7 @@ def test_render_evaluation_report_contains_core_sections(tmp_path: Path) -> None
     assert "# Evaluation Report" in report_text
     assert "## Threshold Sweep" in report_text
     assert "over_automation_rate" in report_text
+    assert "normalized request 결과" in report_text
     assert persisted_text.startswith("# Evaluation Report")
 
 

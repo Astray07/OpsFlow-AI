@@ -19,6 +19,14 @@ CSV/JSONL 입력
 
 ## CLI
 
+의존성 설치:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+LLM assist를 실제 API로 재현하려면 위 설치로 `openai>=1.0.0`이 설치되어 있어야 하고, 유효한 `OPENAI_API_KEY`가 필요합니다.
+
 ```bash
 python -m src.main run \
   --input data/sample_requests.csv \
@@ -58,6 +66,8 @@ QA assertion failures: 0
 
 현재 baseline은 false automation을 피하는 방향으로 보수적입니다. 분류/라우팅 정확도는 rule tuning 이후 개선됐지만, `ready_for_approval` threshold가 보수적이어서 decision accuracy와 automation coverage는 추가 실험 여지가 있습니다.
 
+`external_seed` 8건 100% 결과는 독립 OOD 일반화 성능이 아니라, seed 관찰 후 config 보강이 포함된 regression smoke test로 해석합니다.
+
 ## LLM Assist Boundary
 
 LLM assist는 기본값으로 비활성화되어 있습니다. 재현 가능한 rule-only 실행을 기본으로 두고, 다음 환경변수가 있을 때만 외부 LLM 호출을 시도합니다.
@@ -94,6 +104,8 @@ llm_assist_not_needed: 5
 QA assertion failures: 0
 ```
 
+이 결과는 `openai>=1.0.0`과 유효한 `OPENAI_API_KEY`가 모두 갖춰진 로컬 검증 환경의 스냅샷입니다. 패키지 미설치, 키 만료, 권한 오류가 있으면 `llm_assist_error_fallback`으로 처리되고 rule-only 결과로 계속 진행됩니다.
+
 rule tuning 이후 confidence가 충분한 케이스가 늘면서 LLM 호출 후보는 28건에서 25건으로 줄었습니다.
 
 LLM assist는 현재 분류/라우팅/결정을 덮어쓰지 않고 티켓 본문과 검토 보조 문구를 개선하는 계층입니다. 따라서 gold label 기반 정량 지표는 rule-tuned rule-only와 동일합니다.
@@ -103,6 +115,7 @@ LLM assist는 현재 분류/라우팅/결정을 덮어쓰지 않고 티켓 본�
 ```text
 PII 감지 시 LLM 입력, execution log, ticket body, generated summary, extracted fields는 masked_text 기준 값을 사용합니다.
 .env.example은 placeholder만 포함하고 실제 키는 .env 또는 secret manager에 보관합니다.
+review_queue.csv에는 reviewer 확인용 raw_text 컬럼이 있으므로 외부 공유 전 masked_text 기준으로 재내보내야 합니다.
 ```
 
 ## Project Layout

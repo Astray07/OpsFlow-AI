@@ -17,6 +17,30 @@ def test_load_privacy_config_reads_rules_and_policy() -> None:
         "order_id",
     ]
     assert config.policy["person_masking"] == "v2"
+    assert "person" not in [rule.pii_type for rule in config.masking_rules]
+
+
+def test_disabled_privacy_rules_are_skipped(tmp_path: Path) -> None:
+    config_path = tmp_path / "privacy.yml"
+    config_path.write_text(
+        """
+version: "privacy_rules.test"
+masking:
+  person:
+    enabled: false
+    pattern: "김대리"
+    replacement: "[PERSON]"
+policy: {}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    config = load_privacy_config(config_path)
+    result = mask_pii("김대리님 확인 부탁드립니다.", config)
+
+    assert config.masking_rules == ()
+    assert result.pii_detected is False
+    assert result.masked_text == "김대리님 확인 부탁드립니다."
 
 
 def test_mask_pii_returns_detected_types_and_masked_text() -> None:

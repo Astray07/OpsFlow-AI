@@ -115,6 +115,10 @@ def normalize_request(
         raw_request,
         active_rule_config,
         pii_detected=privacy_result.pii_detected,
+        pii_min_risk_level=active_privacy_config.policy.get(
+            "pii_detected_min_risk_level",
+            RiskLevel.MEDIUM.value,
+        ),
     )
     decision = decide_automation(
         raw_request,
@@ -128,6 +132,9 @@ def normalize_request(
         privacy_result,
         decision.automation_decision,
         enabled=llm_assist_enabled,
+        send_raw_text_to_llm=bool(
+            active_privacy_config.policy.get("send_raw_text_to_llm", False)
+        ),
     )
     display_text = (
         privacy_result.masked_text

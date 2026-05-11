@@ -13,10 +13,19 @@ masking:
   order_id:
     pattern: "(ORD|ORDER)-\\d+"
     replacement: "[ORDER_ID]"
+  person:
+    # v0.3 placeholder. Korean person-name masking is intentionally disabled until
+    # precision is evaluated to avoid over-masking generic role titles.
+    enabled: false
+    pattern: "[가-힣]{2,4}(?:님|대리|과장|차장|부장)"
+    replacement: "[PERSON]"
 
 policy:
+  # Enforced by the pipeline: PII raises at least medium risk.
   pii_detected_min_risk_level: medium
+  # Enforced by LLM assist input selection.
   send_raw_text_to_llm: false
+  # Local outputs are gitignored; external/shared artifacts should use masked fields.
   store_raw_text_local_only: true
+  # v0.3 placeholder. Concrete person masking rules are disabled above.
   person_masking: "v2"
-

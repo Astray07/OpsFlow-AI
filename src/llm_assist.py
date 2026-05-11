@@ -49,10 +49,14 @@ def assist_request(
     *,
     enabled: bool | None = None,
     model_name: str | None = None,
+    send_raw_text_to_llm: bool = False,
 ) -> LlmAssistResult:
     """Run optional LLM assist or return a deterministic skipped trace."""
 
-    input_text = privacy_result.masked_text if privacy_result.pii_detected else raw_request.raw_text
+    if privacy_result.pii_detected and not send_raw_text_to_llm:
+        input_text = privacy_result.masked_text
+    else:
+        input_text = raw_request.raw_text
     requested = should_use_llm_assist(evaluation, automation_decision)
     use_llm = _llm_enabled(enabled) and requested
     selected_model = model_name or os.getenv("OPSFLOW_LLM_MODEL") or DEFAULT_MODEL

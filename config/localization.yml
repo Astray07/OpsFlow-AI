@@ -1,3 +1,5 @@
+# v0.3 placeholder; current MVP keeps ko/en aliases in request_types.yml and does
+# not consume this file in runtime code yet.
 version: "localization.2026-05-11"
 
 default_language: ko
@@ -26,4 +28,3 @@ aliases:
       - data
       - report
       - query
-

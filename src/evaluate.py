@@ -203,7 +203,8 @@ def render_evaluation_report(report: EvaluationReport) -> str:
             "",
             "## Notes",
             "",
-            "- 이 리포트는 현재 rule-only baseline 기준입니다.",
+            "- 이 리포트는 normalized request 결과를 gold label과 비교합니다.",
+            "- LLM assist가 켜져도 request_type, target_team, priority, risk_level, automation_decision은 rule/decision layer 결과를 유지합니다.",
             "- 초기 데이터는 synthetic 중심이므로 실제 운영 분포와 다를 수 있습니다.",
         ]
     )
