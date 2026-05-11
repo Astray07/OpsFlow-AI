@@ -4,8 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 
 from src.decision import AutomationPolicy, decide_automation, load_automation_policy
+from src.human_text import (
+    REQUEST_TYPE_LABELS,
+    RISK_LABELS,
+    format_decision_reasons,
+    format_missing_fields,
+)
 from src.loader import load_requests
 from src.llm_assist import assist_request
 from src.privacy import PrivacyConfig, load_privacy_config, mask_pii
@@ -174,6 +181,7 @@ def normalize_request(
         decision_reasons=decision.decision_reasons,
         llm_used=llm_assist.trace.used,
         model_name=llm_assist.trace.model_name,
+        suggested_clarification=llm_assist.trace.suggested_clarification,
         suggested_ticket_title=llm_assist.suggested_ticket_title
         or _ticket_title(
             evaluation,
@@ -309,14 +317,22 @@ def _ticket_body(
     evaluation: RuleEngineEvaluation,
     decision_reasons: list[str],
 ) -> str:
-    missing = ", ".join(evaluation.missing_fields) if evaluation.missing_fields else "없음"
-    reasons = "\n".join(f"- {reason}" for reason in decision_reasons)
+    missing = format_missing_fields(evaluation.missing_fields)
+    decision_like = SimpleNamespace(
+        missing_fields=evaluation.missing_fields,
+        decision_reasons=decision_reasons,
+        review_reason=None,
+        request_type_confidence=evaluation.request_type_confidence,
+        target_team_confidence=evaluation.target_team_confidence,
+        target_team_candidates=evaluation.target_team_candidates,
+        pii_types=[],
+    )
     return (
         f"원문 요청:\n{request_text}\n\n"
-        f"요청 유형: {evaluation.request_type.value}\n"
+        f"요청 유형: {REQUEST_TYPE_LABELS.get(evaluation.request_type, evaluation.request_type.value)}\n"
         f"담당 팀: {evaluation.target_team.value}\n"
         f"우선순위: {evaluation.priority.value}\n"
-        f"위험도: {evaluation.risk_level.value}\n"
-        f"누락 필드: {missing}\n\n"
-        f"판단 근거:\n{reasons}"
+        f"위험도: {RISK_LABELS.get(evaluation.risk_level, evaluation.risk_level.value)}\n"
+        f"누락 정보:\n{missing}\n\n"
+        f"판단 근거:\n{format_decision_reasons(decision_like)}"
     )

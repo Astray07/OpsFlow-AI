@@ -18,6 +18,7 @@ venv/
 # Local outputs
 outputs/*
 !outputs/.gitkeep
+tmp/
 
 # Local agent metadata
 docs/.bkit-memory.json

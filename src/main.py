@@ -13,6 +13,7 @@ from src.llm_assist import load_env_file, should_override_env_file
 from src.normalizer import NormalizationResult, normalize_file
 from src.qa_assertions import write_qa_assertion_report
 from src.review_queue import build_review_queue, review_queue_rows
+from src.schema import NormalizedRequest
 from src.ticket_builder import build_ticket_drafts
 
 
@@ -64,12 +65,17 @@ def run_pipeline(
         [request.model_dump(mode="json") for request in result.normalized_requests],
     )
     _write_json(
+        output_path / "masked_normalized_requests.json",
+        [_masked_request_payload(request) for request in result.normalized_requests],
+    )
+    _write_json(
         output_path / "execution_log.json",
         [trace.model_dump(mode="json") for trace in result.execution_traces],
     )
 
     ticket_drafts = build_ticket_drafts(result.normalized_requests)
     review_queue = build_review_queue(result.normalized_requests)
+    review_queue_data = review_queue_rows(review_queue)
 
     _write_json(
         output_path / "ticket_drafts.json",
@@ -78,7 +84,12 @@ def run_pipeline(
     write_github_dry_run(ticket_drafts, output_path / "github_dry_run.json")
     _write_csv(
         output_path / "review_queue.csv",
-        review_queue_rows(review_queue),
+        review_queue_data,
+        REVIEW_QUEUE_COLUMNS,
+    )
+    _write_csv(
+        output_path / "masked_review_queue.csv",
+        _masked_review_queue_rows(review_queue_data),
         REVIEW_QUEUE_COLUMNS,
     )
     write_qa_assertion_report(
@@ -154,6 +165,26 @@ def _write_json(path: Path, payload: object) -> None:
         json.dumps(payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+
+
+def _masked_request_payload(request: NormalizedRequest) -> dict[str, object]:
+    payload = request.model_dump(mode="json")
+    if request.pii_detected and request.masked_text:
+        payload["raw_text"] = request.masked_text
+    return payload
+
+
+def _masked_review_queue_rows(
+    rows: list[dict[str, str | bool]],
+) -> list[dict[str, str | bool]]:
+    masked_rows: list[dict[str, str | bool]] = []
+    for row in rows:
+        masked_row = dict(row)
+        masked_text = masked_row.get("masked_text")
+        if masked_row.get("pii_detected") is True and isinstance(masked_text, str) and masked_text:
+            masked_row["raw_text"] = masked_text
+        masked_rows.append(masked_row)
+    return masked_rows
 
 
 def _write_csv(path: Path, rows: list[dict[str, str | bool]], fieldnames: list[str]) -> None:

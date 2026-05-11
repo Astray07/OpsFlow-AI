@@ -115,8 +115,9 @@ approval_request:
     승인: 0.4
     결재: 0.4
     허가: 0.3
-    결제 취소: 0.5
+    결제 취소: 0.7
     환불 처리: 0.5
+    처리 가능: 0.3
     approve: 0.4
     permission: 0.3
   default_team: ops

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,6 +9,12 @@ from typing import Any
 
 import yaml
 
+from src.human_text import (
+    clarification_question_for_request,
+    format_decision_reasons,
+    format_extracted_fields,
+    format_missing_fields,
+)
 from src.privacy import mask_pii
 from src.schema import AutomationDecision, NormalizedRequest, TicketDraft
 
@@ -70,11 +75,12 @@ def build_ticket_draft(
     request: NormalizedRequest,
     templates: TicketTemplateConfig | None = None,
 ) -> TicketDraft | None:
-    """Build one ticket draft, or ``None`` when the request should stay in review."""
+    """Build one ticket draft, or ``None`` when the request is rejected."""
 
     if request.automation_decision not in {
         AutomationDecision.READY_FOR_APPROVAL,
         AutomationDecision.DRAFT_ONLY,
+        AutomationDecision.REVIEW_REQUIRED,
     }:
         return None
 
@@ -130,10 +136,7 @@ def _render_section(section: str, request: NormalizedRequest) -> str | None:
     section_renderers = {
         "summary": lambda: f"## 요약\n{request.summary}",
         "original_request": lambda: f"## 원문 요청\n{_safe_request_text(request)}",
-        "extracted_fields": lambda: (
-            "## 추출 필드\n"
-            f"```json\n{json.dumps(extracted_dict, ensure_ascii=False, indent=2)}\n```"
-        ),
+        "extracted_fields": lambda: f"## 추출 필드\n{format_extracted_fields(extracted_dict)}",
         "missing_information": lambda: _missing_information(request),
         "suggested_next_question": lambda: _suggested_next_question(request),
         "trace": lambda: _trace_section(request),
@@ -152,20 +155,18 @@ def _render_section(section: str, request: NormalizedRequest) -> str | None:
 
 
 def _missing_information(request: NormalizedRequest) -> str:
-    missing = ", ".join(request.missing_fields) if request.missing_fields else "없음"
-    return f"## 누락 정보\n{missing}"
+    return f"## 누락 정보\n{format_missing_fields(request.missing_fields)}"
 
 
 def _suggested_next_question(request: NormalizedRequest) -> str | None:
-    if not request.missing_fields:
+    question = clarification_question_for_request(request)
+    if not question:
         return None
-    fields = ", ".join(request.missing_fields)
-    return f"## 확인 질문\n다음 필드를 보완해 주세요: {fields}"
+    return f"## 확인 질문\n{question}"
 
 
 def _trace_section(request: NormalizedRequest) -> str:
-    reasons = "\n".join(f"- {reason}" for reason in request.decision_reasons)
-    return f"## 판단 근거\n{reasons or '- 별도 판단 근거 없음'}"
+    return f"## 판단 근거\n{format_decision_reasons(request)}"
 
 
 def _field_section(title: str, value: str | None) -> str | None:

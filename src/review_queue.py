@@ -9,6 +9,11 @@ from typing import Any
 
 import yaml
 
+from src.human_text import (
+    clarification_question_for_request,
+    format_missing_fields_inline,
+    format_review_reason,
+)
 from src.schema import AutomationDecision, NormalizedRequest, ReviewAction, ReviewQueueItem
 
 
@@ -96,7 +101,7 @@ def build_review_queue_item(
         team_candidates=[candidate.team for candidate in request.target_team_candidates],
         priority=request.priority,
         risk_level=request.risk_level,
-        review_reason=request.review_reason or "; ".join(triggers),
+        review_reason=format_review_reason(request) or request.review_reason or "; ".join(triggers),
         suggested_question=_suggested_question(request),
         decision_reasons=request.decision_reasons,
         review_action=review_action,
@@ -166,7 +171,10 @@ def _decision_triggers(request: NormalizedRequest) -> set[str]:
 
 
 def _suggested_question(request: NormalizedRequest) -> str | None:
+    question = clarification_question_for_request(request)
+    if question:
+        return question
     if not request.missing_fields:
         return None
-    fields = ", ".join(request.missing_fields)
+    fields = format_missing_fields_inline(request.missing_fields)
     return f"누락된 필드를 보완해 주세요: {fields}"

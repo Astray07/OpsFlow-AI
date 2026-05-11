@@ -18,7 +18,8 @@ def test_review_queue_routes_missing_fields_to_clarification() -> None:
     assert normalized_request.automation_decision == AutomationDecision.REVIEW_REQUIRED
     assert len(items) == 1
     assert items[0].review_action == ReviewAction.ASK_CLARIFICATION
-    assert "impact_scope" in (items[0].suggested_question or "")
+    assert "영향 범위" in (items[0].suggested_question or "")
+    assert "impact_scope" not in (items[0].suggested_question or "")
 
 
 def test_review_queue_routes_pii_to_security_review() -> None:

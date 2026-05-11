@@ -41,9 +41,9 @@ approval_request:
   required:
     - approval_target
     - scope_or_amount
-    - deadline
-  optional:
     - approval_owner
+  optional:
+    - deadline
     - policy_reference
 
 internal_ops:
@@ -57,4 +57,3 @@ internal_ops:
 other:
   required: []
   optional: []
-

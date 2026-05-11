@@ -44,3 +44,37 @@ def test_rule_engine_falls_back_to_other_for_low_signal_request() -> None:
 
     assert evaluation.request_type == RequestType.OTHER
     assert evaluation.target_team == Team.UNASSIGNED
+
+
+def test_rule_engine_infers_clear_customer_support_action() -> None:
+    config = load_rule_engine_config()
+    raw_request = RawRequest(
+        request_id="REQ-017",
+        channel="slack",
+        raw_text=(
+            "E 고객사에서 비밀번호 재설정 메일이 안 온다고 합니다. "
+            "고객은 enterprise 등급입니다."
+        ),
+        metadata={"customer_tier": "enterprise"},
+    )
+
+    evaluation = evaluate_request(raw_request, config)
+
+    assert evaluation.request_type == RequestType.CUSTOMER_SUPPORT
+    assert evaluation.extracted_fields.required_action == "문제 원인 확인 및 고객 응대"
+    assert "required_action" not in evaluation.missing_fields
+
+
+def test_rule_engine_does_not_treat_order_id_as_approval_scope() -> None:
+    config = load_rule_engine_config()
+    raw_request = RawRequest(
+        request_id="REQ-013",
+        channel="slack",
+        raw_text="주문번호 ORD-12345 고객이 결제 취소를 요청했습니다. 처리 가능할까요?",
+    )
+
+    evaluation = evaluate_request(raw_request, config, pii_detected=True)
+
+    assert evaluation.request_type == RequestType.APPROVAL_REQUEST
+    assert evaluation.extracted_fields.scope_or_amount is None
+    assert evaluation.missing_fields == ["scope_or_amount", "approval_owner"]

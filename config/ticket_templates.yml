@@ -24,6 +24,7 @@ data_request:
     - purpose
     - deadline
     - missing_information
+    - suggested_next_question
 
 feature_request:
   title: "[Feature] {summary}"
@@ -35,6 +36,7 @@ feature_request:
     - user_need
     - expected_outcome
     - priority_reason
+    - suggested_next_question
 
 customer_support:
   title: "[CS] {summary}"

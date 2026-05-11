@@ -181,6 +181,7 @@ class NormalizedRequest(BaseModel):
     decision_reasons: list[str] = Field(default_factory=list)
     llm_used: bool = False
     model_name: str | None = None
+    suggested_clarification: str | None = None
     suggested_ticket_title: str | None = None
     suggested_ticket_body: str | None = None
     automation_decision: AutomationDecision

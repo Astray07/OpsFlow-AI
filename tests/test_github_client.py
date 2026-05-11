@@ -23,3 +23,17 @@ def test_build_github_issue_payload_is_dry_run_and_idempotent() -> None:
     assert payload.title == "[Bug] 결제 오류 확인"
     assert "Dry-run only" in payload.body
     assert "engineering" in payload.labels
+
+
+def test_build_github_issue_payload_skips_review_required_draft() -> None:
+    draft = TicketDraft(
+        request_id="REQ-GH-REVIEW",
+        title="[Bug] 결제 오류 확인",
+        body="검토가 필요한 결제 오류 요청입니다.",
+        labels=["bug", "medium"],
+        assignee_team=Team.ENGINEERING,
+        priority=Priority.MEDIUM,
+        source_decision=AutomationDecision.REVIEW_REQUIRED,
+    )
+
+    assert build_github_issue_payload(draft) is None

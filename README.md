@@ -4,6 +4,11 @@ OpsFlow AI는 비정형 업무 요청을 표준 스키마로 정규화하고, �
 
 상세 설계는 [OpsFlow AI 프로젝트 기획서.md](OpsFlow%20AI%20%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%20%EA%B8%B0%ED%9A%8D%EC%84%9C.md)를 기준으로 합니다.
 
+## Portfolio Report
+
+- [최종 포트폴리오 보고서 Markdown](docs/final_project_report_2026-05-11.md)
+- [최종 포트폴리오 보고서 PDF](docs/final_project_report_2026-05-11.pdf)
+
 ## Current Pipeline
 
 ```text
@@ -13,7 +18,7 @@ CSV/JSONL 입력
 → rule-first 분류/필드 추출/우선순위/위험도 계산
 → automation decision
 → normalized request / ticket draft / review queue / trace 출력
-→ evaluation report / QA assertion report 생성
+→ masked export / evaluation report / QA assertion report 생성
 → GitHub Issue dry-run payload 생성
 ```
 
@@ -39,8 +44,10 @@ python -m src.main run \
 
 ```text
 outputs/normalized_requests.json
+outputs/masked_normalized_requests.json
 outputs/ticket_drafts.json
 outputs/review_queue.csv
+outputs/masked_review_queue.csv
 outputs/execution_log.json
 outputs/evaluation_report.md
 outputs/qa_assertion_report.md
@@ -49,22 +56,24 @@ outputs/github_dry_run.json
 
 ## Baseline Result
 
-2026-05-11 기준 `data/sample_requests.csv`와 `data/labeled_requests.csv`로 실행한 rule-tuned rule-only baseline:
+2026-05-11 기준 `data/sample_requests.csv`와 `data/labeled_requests.csv`로 실행한 최종 rule-only baseline:
 
 ```text
 request_type_accuracy: 100.0%
 target_team_accuracy: 100.0%
 priority_accuracy: 100.0%
 risk_level_accuracy: 100.0%
-decision_accuracy: 70.0%
-automation_coverage: 26.7%
+decision_accuracy: 76.7%
+missing_fields_exact_match: 80.0%
+automation_coverage: 33.3%
 false_automation_rate: 0.0%
-over_automation_rate: 20.0%
+over_automation_rate: 14.3%
 review_recall: 100.0%
+review_precision: 80.0%
 QA assertion failures: 0
 ```
 
-현재 baseline은 false automation을 피하는 방향으로 보수적입니다. 분류/라우팅 정확도는 rule tuning 이후 개선됐지만, `ready_for_approval` threshold가 보수적이어서 decision accuracy와 automation coverage는 추가 실험 여지가 있습니다.
+현재 baseline은 false automation을 피하는 방향으로 보수적입니다. Human eval 후속 개선으로 티켓 초안과 review queue는 내부 필드명 대신 한국어 라벨, 누락 정보 설명, 판단 근거 문장을 표시합니다.
 
 `external_seed` 8건 100% 결과는 독립 OOD 일반화 성능이 아니라, seed 관찰 후 config 보강이 포함된 regression smoke test로 해석합니다.
 
@@ -115,7 +124,7 @@ LLM assist는 현재 분류/라우팅/결정을 덮어쓰지 않고 티켓 본�
 ```text
 PII 감지 시 LLM 입력, execution log, ticket body, generated summary, extracted fields는 masked_text 기준 값을 사용합니다.
 .env.example은 placeholder만 포함하고 실제 키는 .env 또는 secret manager에 보관합니다.
-review_queue.csv에는 reviewer 확인용 raw_text 컬럼이 있으므로 외부 공유 전 masked_text 기준으로 재내보내야 합니다.
+review_queue.csv에는 reviewer 확인용 raw_text 컬럼이 있으므로 외부 공유 시에는 `masked_review_queue.csv`와 `masked_normalized_requests.json`만 사용합니다.
 ```
 
 ## Project Layout
@@ -137,6 +146,10 @@ docs/human_eval_template.md   LLM assist 품질 비교용 human-eval 양식
 docs/human_eval_run_2026-05-11.md   LLM assist 비교 실행과 dotenv 우선순위 검증
 docs/security_notes.md        로컬 dotenv와 운영 secret 우선순위 가이드
 docs/agent_validation_prompt.md     외부 검증 에이전트용 프롬프트
+docs/human_eval_form_2026-05-11.html  사람 평가자가 A/B 초안을 채점하는 정적 HTML 도구
+docs/final_human_eval_improvement_2026-05-11.md  human eval 피드백 반영 내역과 최종 검증 결과
+docs/final_project_report_2026-05-11.md  프로젝트 최종 완료 보고서
+docs/final_project_report_2026-05-11.pdf  포트폴리오 제출용 PDF 보고서
 ```
 
 정책성 regex는 `config/extraction_rules.yml`, risk side-effect와 review action 우선순위는 각각 `config/risk_rules.yml`, `config/review_policy.yml`에서 관리합니다.

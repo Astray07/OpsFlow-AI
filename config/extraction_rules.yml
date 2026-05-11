@@ -135,8 +135,6 @@ fields:
     patterns:
       - '\d+\s*만원'
       - '\d+개'
-      - 'ORD-\d+'
-      - 'ORDER-\d+'
 
   approval_owner:
     patterns:

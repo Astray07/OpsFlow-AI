@@ -343,7 +343,7 @@ def extract_fields(
     active_config = config or load_rule_engine_config()
     text = raw_request.raw_text
     rules = active_config.extraction_rules.get("fields", {})
-    return ExtractedFields(
+    extracted = ExtractedFields(
         symptom=_extract_config_field(text, rules, "symptom"),
         affected_customer_or_user=_extract_config_field(text, rules, "affected_customer_or_user"),
         impact_scope=_extract_config_field(text, rules, "impact_scope"),
@@ -367,6 +367,7 @@ def extract_fields(
         requested_action=_extract_config_field(text, rules, "requested_action"),
         target_user_or_system=_extract_config_field(text, rules, "target_user_or_system"),
     )
+    return _infer_support_action(text, extracted)
 
 
 def calculate_missing_fields(
@@ -383,6 +384,18 @@ def calculate_missing_fields(
         for field_name in required_fields
         if not _field_has_value(extracted_fields, field_name)
     ]
+
+
+def _infer_support_action(text: str, extracted_fields: ExtractedFields) -> ExtractedFields:
+    if extracted_fields.required_action:
+        return extracted_fields
+    if any(keyword in text for keyword in ["결제 취소", "환불 처리 승인", "승인 부탁"]):
+        return extracted_fields
+    if not extracted_fields.customer or not extracted_fields.issue_detail:
+        return extracted_fields
+    if not any(keyword in text for keyword in ["안 온다고", "문의", "오류", "상태", "로그인"]):
+        return extracted_fields
+    return extracted_fields.model_copy(update={"required_action": "문제 원인 확인 및 고객 응대"})
 
 
 def calculate_required_field_score(

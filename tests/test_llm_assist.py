@@ -1,5 +1,8 @@
 import builtins
+import json
 import os
+import sys
+from types import SimpleNamespace
 from pathlib import Path
 
 from src.decision import decide_automation
@@ -123,6 +126,65 @@ def test_llm_import_error_falls_back_without_leaking_key(monkeypatch) -> None:
     assert result.trace.error == "No module named 'openai'"
     assert "test-key-not-real" not in (result.trace.error or "")
     assert result.input_text == "[PHONE] 고객에게 연락처 확인 안내를 보내주세요."
+
+
+def test_assist_request_uses_structured_openai_response(monkeypatch) -> None:
+    raw_request = RawRequest(
+        request_id="REQ-LLM-STRUCTURED",
+        channel="form",
+        raw_text="결제 안 됩니다.",
+    )
+    privacy_result = mask_pii(raw_request.raw_text)
+    evaluation = evaluate_request(raw_request, pii_detected=privacy_result.pii_detected)
+    decision = decide_automation(
+        raw_request,
+        evaluation,
+        pii_detected=privacy_result.pii_detected,
+    )
+    calls: list[dict[str, object]] = []
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            calls.append(kwargs)
+            content = json.dumps(
+                {
+                    "summary": "결제 오류 확인 요청",
+                    "suggested_ticket_title": "[Bug] 결제 오류 확인",
+                    "suggested_ticket_body": "원문 근거 기준의 결제 오류 검토 초안입니다.",
+                    "suggested_clarification": "영향 고객과 재현 조건을 알려 주세요.",
+                },
+                ensure_ascii=False,
+            )
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=SimpleNamespace(content=content, refusal=None)
+                    )
+                ]
+            )
+
+    class FakeOpenAI:
+        def __init__(self):
+            self.chat = SimpleNamespace(completions=FakeCompletions())
+
+    monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(OpenAI=FakeOpenAI))
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
+    result = assist_request(
+        raw_request,
+        evaluation,
+        privacy_result,
+        decision.automation_decision,
+        enabled=True,
+    )
+
+    assert result.trace.used is True
+    assert result.summary == "결제 오류 확인 요청"
+    assert result.suggested_ticket_title == "[Bug] 결제 오류 확인"
+    assert result.suggested_ticket_body == "원문 근거 기준의 결제 오류 검토 초안입니다."
+    assert result.trace.suggested_clarification == "영향 고객과 재현 조건을 알려 주세요."
+    assert calls[0]["response_format"]["type"] == "json_schema"
+    assert calls[0]["response_format"]["json_schema"]["strict"] is True
 
 
 def test_env_example_uses_supported_llm_variable_names(monkeypatch) -> None:

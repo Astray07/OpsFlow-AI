@@ -1,0 +1,1401 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpsFlow AI Human Eval</title>
+  <style>
+    :root {
+      --bg: #f7f7f4;
+      --ink: #181816;
+      --muted: #66665f;
+      --line: #d8d7ce;
+      --panel: #ffffff;
+      --accent: #0f766e;
+      --accent-soft: #d9f3ef;
+      --warn: #8a4b0f;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100svh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100svh;
+      padding: 24px 18px;
+      border-right: 1px solid var(--line);
+      background: #efeee8;
+      overflow: auto;
+    }
+
+    .brand {
+      margin: 0 0 6px;
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .subtle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .progress {
+      margin: 22px 0;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .bar {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #dbdad2;
+    }
+
+    .bar span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: var(--accent);
+      transition: width 180ms ease;
+    }
+
+    .case-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .case-button {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease;
+    }
+
+    .case-button:hover {
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .case-button.active {
+      border-color: #a9c8c3;
+      background: var(--accent-soft);
+    }
+
+    .case-id {
+      display: block;
+      margin-bottom: 3px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+    }
+
+    .case-title {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: grid;
+      gap: 8px;
+      margin-top: 22px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .action-button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .action-button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .main {
+      padding: 28px;
+      overflow: hidden;
+    }
+
+    .topline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .topline h2 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      padding: 5px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .request {
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--accent);
+      background: #fff;
+      line-height: 1.55;
+    }
+
+    .guide {
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .guide-intro {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .guide-intro h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      line-height: 1.15;
+    }
+
+    .guide-intro p {
+      max-width: 900px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .guide-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfbf8;
+    }
+
+    .guide h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .guide-body {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 18px;
+      padding: 16px;
+    }
+
+    .guide-column {
+      display: grid;
+      gap: 14px;
+    }
+
+    .guide-box {
+      padding: 12px;
+      border: 1px solid #ecebe5;
+      border-radius: 6px;
+      background: #fbfbf8;
+    }
+
+    .guide-box h4 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .guide-box p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .guide-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .steps {
+      margin: 0;
+      padding-left: 19px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .rubric {
+      display: grid;
+      gap: 8px;
+    }
+
+    .rubric-row {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ecebe5;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .rubric-row:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .rubric-row strong {
+      color: var(--ink);
+    }
+
+    .score-key {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .score-key span {
+      padding: 4px 7px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #0d5f59;
+      font-size: 12px;
+    }
+
+    .field-guide {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 0 16px 16px;
+      background: #fff;
+    }
+
+    .field-guide div {
+      padding: 10px;
+      border: 1px solid #ecebe5;
+      border-radius: 6px;
+      background: #fbfbf8;
+    }
+
+    .field-guide strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+
+    .field-guide span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .section-label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .variants {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+
+    .variant {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .variant-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfbf8;
+    }
+
+    .variant-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .variant h3 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.35;
+    }
+
+    .draft {
+      max-height: 430px;
+      margin: 0;
+      padding: 16px;
+      overflow: auto;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      line-height: 1.55;
+    }
+
+    .draft-section {
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #ecebe5;
+    }
+
+    .draft-section:last-child {
+      padding-bottom: 0;
+      margin-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .draft-section h4 {
+      margin: 0 0 5px;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+
+    .draft-help {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .draft-content {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .draft-content.raw {
+      white-space: pre-wrap;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .draft-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .draft-list li {
+      padding: 7px 8px;
+      border: 1px solid #ecebe5;
+      border-radius: 6px;
+      background: #fbfbf8;
+    }
+
+    .draft-list strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 12px;
+    }
+
+    .draft-list span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .score-area {
+      display: grid;
+      gap: 12px;
+      padding: 14px 16px 16px;
+    }
+
+    .criterion {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .criterion span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .criterion-label strong {
+      display: block;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .criterion-label small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .segmented button {
+      min-height: 32px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .segmented button:last-child {
+      border-right: 0;
+    }
+
+    .segmented button.selected {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .inputs {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .inputs label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input[type="number"],
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    input[type="number"] {
+      min-height: 34px;
+      padding: 0 9px;
+    }
+
+    textarea {
+      min-height: 74px;
+      padding: 9px;
+      resize: vertical;
+    }
+
+    .status {
+      min-height: 20px;
+      margin-top: 12px;
+      color: var(--warn);
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .case-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .variants {
+        grid-template-columns: 1fr;
+      }
+
+      .guide-body {
+        grid-template-columns: 1fr;
+      }
+
+      .field-guide {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .main {
+        padding: 18px;
+      }
+
+      .case-list {
+        grid-template-columns: 1fr;
+      }
+
+      .criterion,
+      .inputs {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <h1 class="brand">OpsFlow Eval</h1>
+      <p class="subtle">업무 요청을 티켓으로 바꾼 두 초안을 비교하는 간단한 평가입니다.</p>
+
+      <div class="progress">
+        <div class="progress-row">
+          <span>완료</span>
+          <strong id="progressText">0 / 10</strong>
+        </div>
+        <div class="bar"><span id="progressBar"></span></div>
+      </div>
+
+      <ol class="case-list" id="caseList"></ol>
+
+      <div class="actions">
+        <button class="action-button primary" id="exportCsv">CSV 내보내기</button>
+        <button class="action-button" id="exportJson">JSON 내보내기</button>
+        <button class="action-button" id="copyCsv">CSV 복사</button>
+        <button class="action-button" id="resetAll">초기화</button>
+      </div>
+      <p class="subtle" style="margin-top:14px">평가 결과는 브라우저 localStorage에 자동 저장됩니다.</p>
+    </aside>
+
+    <main class="main">
+      <section class="guide" aria-label="평가 안내">
+        <div class="guide-intro">
+          <h2>프로젝트를 몰라도 평가할 수 있습니다.</h2>
+          <p>
+            OpsFlow AI는 짧고 애매한 업무 요청을 읽고 담당자가 처리할 수 있는 티켓 초안으로 정리하는 도구입니다.
+            이 화면은 같은 원문 요청에 대해 만들어진 두 초안 A/B를 보여줍니다.
+            어느 쪽이 더 사실에 맞고, 바로 처리하기 쉽고, 덜 고쳐도 되는지 판단해 주세요.
+          </p>
+        </div>
+        <div class="guide-head">
+          <div>
+            <h3>평가자가 할 일</h3>
+            <p class="subtle">정답을 맞히는 시험이 아닙니다. 실제 업무 담당자라면 어느 초안을 더 신뢰하고 쓰기 쉬운지 보는 평가입니다.</p>
+          </div>
+          <div class="score-key" aria-label="점수 기준">
+            <span>1 다시 써야 함</span>
+            <span>3 일부 수정 필요</span>
+            <span>5 바로 사용 가능</span>
+          </div>
+        </div>
+        <div class="guide-body">
+          <div class="guide-column">
+            <div class="guide-box">
+              <h4>좋은 초안은 이런 상태입니다.</h4>
+              <ul class="guide-list">
+                <li>원문에 없는 내용을 지어내지 않습니다.</li>
+                <li>담당자가 무엇을 확인하거나 처리해야 하는지 바로 보입니다.</li>
+                <li>부족한 정보가 있으면 구체적인 확인 질문이 있습니다.</li>
+                <li>전화번호, 주문번호, 사람 이름 같은 민감 정보가 가려져 있습니다.</li>
+              </ul>
+            </div>
+            <div class="guide-box">
+              <h4>A/B는 무엇인가요?</h4>
+              <p>
+                A와 B는 서로 다른 방식으로 만든 티켓 초안입니다.
+                어떤 방식인지 알 필요는 없습니다. 원문 요청과 비교해서 각 초안을 독립적으로 채점해 주세요.
+              </p>
+            </div>
+            <div class="guide-box">
+              <h4>초안 안의 항목은 왜 있나요?</h4>
+              <p>
+                초안은 사람이 바로 검토할 수 있도록 여러 항목으로 나뉩니다.
+                낯선 항목은 각 초안 안에서 짧은 설명을 함께 보여줍니다.
+              </p>
+            </div>
+          </div>
+          <div class="guide-column">
+            <div class="guide-box">
+              <h4>진행 순서</h4>
+              <ol class="steps">
+                <li>아래의 원문 요청을 먼저 읽습니다.</li>
+                <li>Variant A와 Variant B의 제목, 본문, 확인 질문을 비교합니다.</li>
+                <li>각 Variant마다 5개 기준을 모두 채점합니다.</li>
+                <li>시간을 잴 수 있으면 검토 시간(초)을 입력합니다. 아니면 비워도 됩니다.</li>
+                <li>10개 요청을 모두 끝낸 뒤 CSV 내보내기를 누릅니다.</li>
+              </ol>
+            </div>
+            <div class="rubric">
+              <div class="rubric-row">
+                <strong>사실성</strong>
+                <span>원문에 없는 고객, 장애 원인, 처리 결과를 지어내지 않았는지 봅니다.</span>
+              </div>
+              <div class="rubric-row">
+                <strong>실행성</strong>
+                <span>담당자가 다음 행동을 바로 알 수 있는지 봅니다.</span>
+              </div>
+              <div class="rubric-row">
+                <strong>완결성</strong>
+                <span>증상, 영향 범위, 누락 정보, 확인 질문이 충분히 들어 있는지 봅니다.</span>
+              </div>
+              <div class="rubric-row">
+                <strong>개인정보</strong>
+                <span>전화번호, 주문번호, 사람 이름 같은 민감 정보가 마스킹되어 있는지 봅니다.</span>
+              </div>
+              <div class="rubric-row">
+                <strong>편집 부담</strong>
+                <span>이 초안을 그대로 쓰거나 조금만 고치면 되는지 봅니다.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="topline">
+        <div>
+          <h2 id="caseHeading">REQ-002</h2>
+          <p class="subtle">아래 원문 요청을 기준으로 두 초안이 얼마나 쓸 만한지 각각 점수를 매겨 주세요.</p>
+        </div>
+        <div class="meta" id="caseMeta"></div>
+      </div>
+
+      <p class="section-label">원문 요청</p>
+      <section class="request" id="requestText"></section>
+      <p class="section-label">티켓 초안 A/B</p>
+      <section class="field-guide" aria-label="티켓 초안 항목 설명">
+        <div>
+          <strong>추출 필드</strong>
+          <span>원문에서 시스템이 뽑아낸 구조화 정보입니다. 틀렸거나 애매하면 점수를 낮게 주세요.</span>
+        </div>
+        <div>
+          <strong>누락 정보</strong>
+          <span>현재 요청만으로는 알 수 없어 요청자에게 다시 물어봐야 하는 정보입니다.</span>
+        </div>
+        <div>
+          <strong>판단 근거</strong>
+          <span>시스템이 왜 바로 처리하지 않고 검토 대상으로 보냈는지 보여주는 안전 장치 기록입니다.</span>
+        </div>
+      </section>
+      <section class="variants" id="variantGrid"></section>
+      <div class="status" id="statusLine"></div>
+    </main>
+  </div>
+
+  <script>
+    const criteria = ["factuality", "actionability", "completeness", "privacy_safety", "reviewer_effort"];
+    const criterionLabels = {
+      factuality: "사실성",
+      actionability: "실행성",
+      completeness: "완결성",
+      privacy_safety: "개인정보",
+      reviewer_effort: "편집 부담"
+    };
+    const criterionHelp = {
+      factuality: "없는 사실을 만들지 않았나요?",
+      actionability: "바로 다음 행동이 보이나요?",
+      completeness: "필요 정보가 충분한가요?",
+      privacy_safety: "민감 정보가 가려졌나요?",
+      reviewer_effort: "수정 부담이 적나요?"
+    };
+    const scoreLabels = {
+      1: "1 다시 작성",
+      3: "3 일부 수정",
+      5: "5 바로 사용"
+    };
+    const sectionHelp = {
+      "요약": "요청 내용을 한눈에 파악하기 위한 한두 문장입니다. 원문 의미와 다르거나 너무 모호하면 낮게 평가해 주세요.",
+      "원문 요청": "사용자가 실제로 보낸 요청입니다. 초안의 다른 항목이 이 원문과 맞는지 비교하는 기준입니다.",
+      "추출 필드": "시스템이 원문에서 뽑아낸 구조화 정보입니다. 고객, 증상, 마감일, 영향 범위 등이 정확히 들어갔는지 봅니다.",
+      "누락 정보": "현재 요청만으로는 알 수 없어 추가 확인이 필요한 항목입니다. 각 항목은 이름과 왜 필요한지로 표시됩니다.",
+      "확인 질문": "누락 정보를 채우기 위해 요청자에게 물어볼 질문입니다. 질문이 구체적이고 바로 답하기 쉬우면 좋습니다.",
+      "판단 근거": "시스템이 이 요청을 바로 처리하지 않고 검토 대상으로 둔 이유입니다. 정보 부족, 위험도, 개인정보, 팀 판단 애매함 같은 이유를 확인합니다.",
+      "요청 데이터/지표": "데이터 요청에서 필요한 데이터셋이나 지표입니다. 무엇을 뽑아야 하는지 알 수 있어야 합니다.",
+      "목적": "요청자가 이 결과를 왜 필요한지 설명하는 항목입니다. 목적이 있어야 우선순위와 범위를 판단하기 쉽습니다.",
+      "마감일": "언제까지 처리해야 하는지 보여주는 항목입니다.",
+      "사용자 니즈": "기능 요청에서 사용자가 겪는 문제나 원하는 개선점입니다.",
+      "기대 결과": "요청이 처리되면 어떤 상태가 되어야 하는지 보여주는 항목입니다.",
+      "우선순위 근거": "왜 급하거나 중요한지 판단하는 근거입니다."
+    };
+    const fieldLabels = {
+      symptom: "증상",
+      affected_customer_or_user: "영향받는 고객/사용자",
+      impact_scope: "영향 범위",
+      reproduction_steps: "재현 조건",
+      first_seen_at: "최초 발생 시점",
+      environment: "환경",
+      dataset_or_metric: "데이터/지표",
+      purpose: "사용 목적",
+      deadline: "마감일/처리 희망 시점",
+      format: "형식",
+      user_need: "사용자 니즈",
+      expected_outcome: "기대 결과",
+      priority_reason: "우선순위 근거",
+      customer: "고객",
+      issue_detail: "문의/문제 내용",
+      required_action: "필요한 조치",
+      contact_channel: "연락 채널",
+      approval_target: "승인 대상",
+      scope_or_amount: "처리 범위/금액",
+      approval_owner: "승인권자",
+      policy_reference: "적용 정책/근거",
+      requested_action: "요청 조치",
+      target_user_or_system: "대상 사용자/시스템"
+    };
+    const fieldDescriptions = {
+      affected_customer_or_user: "어느 고객사, 사용자, 요청이 영향을 받는지",
+      impact_scope: "일부 사용자 문제인지, 전체 요청/고객에 영향을 주는지",
+      dataset_or_metric: "추출해야 하는 데이터셋, 리포트, 지표 이름",
+      purpose: "데이터나 작업 결과를 어디에 쓰려는지",
+      deadline: "언제까지 처리해야 하는지",
+      issue_detail: "고객 문의나 문제의 구체적인 내용",
+      required_action: "담당자가 해야 할 확인, 답변, 처리 조치",
+      scope_or_amount: "승인 범위, 금액, 수량, 처리 대상",
+      approval_owner: "처리를 승인할 책임자나 팀",
+      policy_reference: "처리 가능 여부를 판단할 정책이나 기준",
+      requested_action: "내부 운영 요청에서 수행해야 할 조치",
+      target_user_or_system: "조치가 적용될 계정, 사람, 시스템"
+    };
+    const reasonLabels = {
+      required_missing_fields_present: "필수 정보가 부족해 요청자에게 추가 확인이 필요합니다.",
+      multiple_team_candidates: "담당 팀 후보가 비슷해 어느 팀으로 보낼지 확인이 필요합니다.",
+      low_confidence: "분류 신뢰도가 기준보다 낮아 담당자 확인이 필요합니다.",
+      pii_detected: "전화번호, 주문번호, 사람 이름 같은 식별 정보가 감지되어 마스킹 후 검토가 필요합니다.",
+      high_risk_action: "권한, 결제, 환불, 삭제처럼 되돌리기 어려운 조치라 승인 또는 보안 검토가 필요합니다.",
+      ready_for_approval_threshold_met: "필수 정보와 신뢰도 기준을 충족해 승인 후보로 분류되었습니다.",
+      draft_only_threshold_met: "초안 생성 기준은 충족했지만 외부 등록 전 사람 확인이 필요합니다."
+    };
+
+    const cases = [
+      {
+        id: "REQ-002",
+        decision: "review_required",
+        request: "지난번 데이터 다시 주세요.",
+        priority: "medium",
+        risk: "low",
+        variantA: {
+          source: "rule-only",
+          title: "[Data] 지난번 데이터 다시 주세요",
+          body: "## 요약\n지난번 데이터 다시 주세요\n\n## 누락 정보\ndataset_or_metric, purpose, deadline\n\n## 확인 질문\n요청 처리를 위해 다음 정보를 알려 주세요: dataset_or_metric, purpose, deadline"
+        },
+        variantB: {
+          source: "llm-assist",
+          title: "[Data] 지난번 요청한 데이터를 다시 요청함. 데이터셋, 목적, 마감일 정보가 누락되어 추가 확인 필요.",
+          body: "## 요약\n지난번 요청한 데이터를 다시 요청함. 데이터셋, 목적, 마감일 정보가 누락되어 추가 확인 필요.\n\n## 누락 정보\ndataset_or_metric, purpose, deadline\n\n## 확인 질문\n요청하신 데이터셋 이름과 사용 목적, 그리고 데이터가 필요한 마감일을 알려주시겠습니까?"
+        }
+      },
+      {
+        id: "REQ-003",
+        decision: "review_required",
+        request: "B 고객사에서 로그인 후 대시보드가 빈 화면으로 보인다고 합니다. 오늘 중 확인 부탁드립니다.",
+        priority: "high",
+        risk: "medium",
+        variantA: {
+          source: "rule-only",
+          title: "[Bug] B 고객사에서 로그인 후 대시보드가 빈 화면으로 보인다고 합니다",
+          body: "## 요약\nB 고객사에서 로그인 후 대시보드가 빈 화면으로 보인다고 합니다\n\n## 원문 요청\nB 고객사에서 로그인 후 대시보드가 빈 화면으로 보인다고 합니다. 오늘 중 확인 부탁드립니다.\n\n## 추출 필드\n```json\n{\n  \"symptom\": \"B 고객사에서 로그인 후 대시보드가 빈 화면으로 보인다고 합니다\",\n  \"affected_customer_or_user\": \"B 고객사\",\n  \"reproduction_steps\": \"B 고객사에서 로그인 후 대시보드가 빈 화면으로 보인다고 합니다\",\n  \"first_seen_at\": \"오늘\",\n  \"deadline\": \"오늘 중\",\n  \"priority_reason\": \"오늘 중\",\n  \"customer\": \"B 고객사\",\n  \"required_action\": \"오늘 중 확인 부탁드립니다\"\n}\n```\n\n## 누락 정보\nimpact_scope\n\n## 확인 질문\n요청 처리를 위해 다음 정보를 알려 주세요: impact_scope\n\n## 판단 근거\n- review_required: required_missing_fields_present\n- review_required: multiple_team_candidates\n- review_required: low_confidence"
+        },
+        variantB: {
+          source: "llm-assist",
+          title: "[Bug] B 고객사에서 로그인 후 대시보드가 빈 화면으로 나타나는 문제 발생. 빠른 확인 필요.",
+          body: "## 요약\nB 고객사에서 로그인 후 대시보드가 빈 화면으로 나타나는 문제 발생. 빠른 확인 필요.\n\n## 원문 요청\nB 고객사에서 로그인 후 대시보드가 빈 화면으로 보인다고 합니다. 오늘 중 확인 부탁드립니다.\n\n## 추출 필드\n```json\n{\n  \"symptom\": \"B 고객사에서 로그인 후 대시보드가 빈 화면으로 보인다고 합니다\",\n  \"affected_customer_or_user\": \"B 고객사\",\n  \"reproduction_steps\": \"B 고객사에서 로그인 후 대시보드가 빈 화면으로 보인다고 합니다\",\n  \"first_seen_at\": \"오늘\",\n  \"deadline\": \"오늘 중\",\n  \"priority_reason\": \"오늘 중\",\n  \"customer\": \"B 고객사\",\n  \"required_action\": \"오늘 중 확인 부탁드립니다\"\n}\n```\n\n## 누락 정보\nimpact_scope\n\n## 확인 질문\n대시보드 빈 화면 문제가 특정 사용자에게만 발생하는지, 전체 사용자에게 발생하는지 확인 부탁드립니다.\n\n## 판단 근거\n- review_required: required_missing_fields_present\n- review_required: multiple_team_candidates\n- review_required: low_confidence"
+        }
+      },
+      {
+        id: "REQ-005",
+        decision: "review_required",
+        request: "A 고객사 건 급해요. 바로 처리해주세요.",
+        priority: "high",
+        risk: "medium",
+        variantA: {
+          source: "rule-only",
+          title: "[CS] A 고객사 건 급해요",
+          body: "## 요약\nA 고객사 건 급해요\n\n## 원문 요청\nA 고객사 건 급해요. 바로 처리해주세요.\n\n## 추출 필드\n```json\n{\n  \"affected_customer_or_user\": \"A 고객사\",\n  \"priority_reason\": \"급해요\",\n  \"customer\": \"A 고객사\"\n}\n```\n\n## 누락 정보\nissue_detail, required_action\n\n## 확인 질문\n요청 처리를 위해 다음 정보를 알려 주세요: issue_detail, required_action\n\n## 판단 근거\n- review_required: required_missing_fields_present\n- review_required: low_confidence"
+        },
+        variantB: {
+          source: "llm-assist",
+          title: "[CS] A 고객사 관련 긴급 처리 요청입니다.",
+          body: "## 요약\nA 고객사 관련 긴급 처리 요청입니다.\n\n## 원문 요청\nA 고객사 건 급해요. 바로 처리해주세요.\n\n## 추출 필드\n```json\n{\n  \"affected_customer_or_user\": \"A 고객사\",\n  \"priority_reason\": \"급해요\",\n  \"customer\": \"A 고객사\"\n}\n```\n\n## 누락 정보\nissue_detail, required_action\n\n## 확인 질문\n요청 처리를 위해 다음 정보를 알려 주세요: issue_detail, required_action\n\n## 판단 근거\n- review_required: required_missing_fields_present\n- review_required: low_confidence"
+        }
+      },
+      {
+        id: "REQ-007",
+        decision: "review_required",
+        request: "[PERSON] 계정에 운영 관리자 권한 열어주세요. 오늘 배포 전에 필요합니다.",
+        priority: "high",
+        risk: "high",
+        variantA: {
+          source: "rule-only",
+          title: "[Ops] [PERSON] 계정에 운영 관리자 권한 열어주세요",
+          body: "## 요약\n[PERSON] 계정에 운영 관리자 권한 열어주세요\n\n## 원문 요청\n[PERSON] 계정에 운영 관리자 권한 열어주세요. 오늘 배포 전에 필요합니다.\n\n## 추출 필드\n```json\n{\n  \"first_seen_at\": \"오늘\",\n  \"purpose\": \"오늘 배포 전에 필요합니다\",\n  \"deadline\": \"오늘\",\n  \"expected_outcome\": \"오늘 배포 전에 필요합니다\",\n  \"priority_reason\": \"배포 전에\",\n  \"approval_target\": \"권한\",\n  \"requested_action\": \"권한 열어\",\n  \"target_user_or_system\": \"[PERSON] 계정\"\n}\n```\n\n## 누락 정보\n없음\n\n## 확인 질문\n처리 전 승인권자와 안전 검토 범위를 확인해 주세요.\n\n## 판단 근거\n- review_required: low_confidence\n- review_required: pii_detected\n- review_required: high_risk_action"
+        },
+        variantB: {
+          source: "llm-assist",
+          title: "[Ops] [PERSON] 계정에 운영 관리자 권한 부여 요청, 오늘 배포 전 필요",
+          body: "## 요약\n[PERSON] 계정에 운영 관리자 권한 부여 요청, 오늘 배포 전 필요\n\n## 원문 요청\n[PERSON] 계정에 운영 관리자 권한 열어주세요. 오늘 배포 전에 필요합니다.\n\n## 추출 필드\n```json\n{\n  \"first_seen_at\": \"오늘\",\n  \"purpose\": \"오늘 배포 전에 필요합니다\",\n  \"deadline\": \"오늘\",\n  \"expected_outcome\": \"오늘 배포 전에 필요합니다\",\n  \"priority_reason\": \"배포 전에\",\n  \"approval_target\": \"권한\",\n  \"requested_action\": \"권한 열어\",\n  \"target_user_or_system\": \"[PERSON] 계정\"\n}\n```\n\n## 누락 정보\n없음\n\n## 확인 질문\n처리 전 승인권자와 안전 검토 범위를 확인해 주세요.\n\n## 판단 근거\n- review_required: low_confidence\n- review_required: pii_detected\n- review_required: high_risk_action"
+        }
+      },
+      {
+        id: "REQ-009",
+        decision: "review_required",
+        request: "결제 안 됩니다.",
+        priority: "medium",
+        risk: "low",
+        variantA: {
+          source: "rule-only",
+          title: "[Bug] 결제 안 됩니다",
+          body: "## 요약\n결제 안 됩니다\n\n## 원문 요청\n결제 안 됩니다.\n\n## 추출 필드\n```json\n{\n  \"symptom\": \"결제 안 됩니다\"\n}\n```\n\n## 누락 정보\naffected_customer_or_user, impact_scope\n\n## 확인 질문\n요청 처리를 위해 다음 정보를 알려 주세요: affected_customer_or_user, impact_scope\n\n## 판단 근거\n- review_required: required_missing_fields_present\n- review_required: low_confidence"
+        },
+        variantB: {
+          source: "llm-assist",
+          title: "[Bug] 결제 기능이 작동하지 않는 문제 보고",
+          body: "## 요약\n결제 기능이 작동하지 않는 문제 보고\n\n## 원문 요청\n결제 안 됩니다.\n\n## 추출 필드\n```json\n{\n  \"symptom\": \"결제 안 됩니다\"\n}\n```\n\n## 누락 정보\naffected_customer_or_user, impact_scope\n\n## 확인 질문\n결제가 안 되는 구체적인 상황(예: 결제 수단, 오류 메시지 등)을 알려주실 수 있나요?\n\n## 판단 근거\n- review_required: required_missing_fields_present\n- review_required: low_confidence"
+        }
+      },
+      {
+        id: "REQ-013",
+        decision: "review_required",
+        request: "주문번호 [ORDER_ID] 고객이 결제 취소를 요청했습니다. 처리 가능할까요?",
+        priority: "high",
+        risk: "high",
+        variantA: {
+          source: "rule-only",
+          title: "[Approval] 주문번호 [ORDER_ID] 고객이 결제 취소를 요청했습니다",
+          body: "## 요약\n주문번호 [ORDER_ID] 고객이 결제 취소를 요청했습니다\n\n## 원문 요청\n주문번호 [ORDER_ID] 고객이 결제 취소를 요청했습니다. 처리 가능할까요?\n\n## 추출 필드\n```json\n{\n  \"affected_customer_or_user\": \"고객\",\n  \"customer\": \"고객\",\n  \"issue_detail\": \"주문번호 [ORDER_ID] 고객이 결제 취소를 요청했습니다\",\n  \"approval_target\": \"결제 취소\",\n  \"scope_or_amount\": \"[ORDER_ID]\"\n}\n```\n\n## 누락 정보\ndeadline\n\n## 확인 질문\n요청 처리를 위해 다음 정보를 알려 주세요: deadline\n\n## 판단 근거\n- review_required: required_missing_fields_present\n- review_required: low_confidence\n- review_required: pii_detected\n- review_required: high_risk_action"
+        },
+        variantB: {
+          source: "llm-assist",
+          title: "[Approval] 주문번호 [ORDER_ID] 고객의 결제 취소 요청에 대한 처리 가능 여부 검토 요청",
+          body: "## 요약\n주문번호 [ORDER_ID] 고객의 결제 취소 요청에 대한 처리 가능 여부 검토 요청\n\n## 원문 요청\n주문번호 [ORDER_ID] 고객이 결제 취소를 요청했습니다. 처리 가능할까요?\n\n## 추출 필드\n```json\n{\n  \"affected_customer_or_user\": \"고객\",\n  \"customer\": \"고객\",\n  \"issue_detail\": \"주문번호 [ORDER_ID] 고객이 결제 취소를 요청했습니다\",\n  \"approval_target\": \"결제 취소\",\n  \"scope_or_amount\": \"[ORDER_ID]\"\n}\n```\n\n## 누락 정보\ndeadline\n\n## 확인 질문\n결제 취소 요청의 마감 기한이 언제인지 알려주시기 바랍니다.\n\n## 판단 근거\n- review_required: required_missing_fields_present\n- review_required: low_confidence\n- review_required: pii_detected\n- review_required: high_risk_action"
+        }
+      },
+      {
+        id: "REQ-017",
+        decision: "review_required",
+        request: "E 고객사에서 비밀번호 재설정 메일이 안 온다고 합니다. 고객은 enterprise 등급입니다.",
+        priority: "high",
+        risk: "medium",
+        variantA: {
+          source: "rule-only",
+          title: "[CS] E 고객사에서 비밀번호 재설정 메일이 안 온다고 합니다",
+          body: "## 요약\nE 고객사에서 비밀번호 재설정 메일이 안 온다고 합니다\n\n## 원문 요청\nE 고객사에서 비밀번호 재설정 메일이 안 온다고 합니다. 고객은 enterprise 등급입니다.\n\n## 추출 필드\n```json\n{\n  \"affected_customer_or_user\": \"E 고객사\",\n  \"priority_reason\": \"enterprise\",\n  \"customer\": \"E 고객사\",\n  \"issue_detail\": \"E 고객사에서 비밀번호 재설정 메일이 안 온다고 합니다\"\n}\n```\n\n## 누락 정보\nrequired_action\n\n## 확인 질문\n요청 처리를 위해 다음 정보를 알려 주세요: required_action\n\n## 판단 근거\n- review_required: required_missing_fields_present\n- review_required: low_confidence"
+        },
+        variantB: {
+          source: "llm-assist",
+          title: "[CS] E 고객사에서 비밀번호 재설정 메일이 도착하지 않는 문제 발생. 고객 등급은 enterprise임.",
+          body: "## 요약\nE 고객사에서 비밀번호 재설정 메일이 도착하지 않는 문제 발생. 고객 등급은 enterprise임.\n\n## 원문 요청\nE 고객사에서 비밀번호 재설정 메일이 안 온다고 합니다. 고객은 enterprise 등급입니다.\n\n## 추출 필드\n```json\n{\n  \"affected_customer_or_user\": \"E 고객사\",\n  \"priority_reason\": \"enterprise\",\n  \"customer\": \"E 고객사\",\n  \"issue_detail\": \"E 고객사에서 비밀번호 재설정 메일이 안 온다고 합니다\"\n}\n```\n\n## 누락 정보\nrequired_action\n\n## 확인 질문\n요청 처리를 위해 다음 정보를 알려 주세요: required_action\n\n## 판단 근거\n- review_required: required_missing_fields_present\n- review_required: low_confidence"
+        }
+      },
+      {
+        id: "REQ-020",
+        decision: "review_required",
+        request: "데이터 추출 부탁드립니다.",
+        priority: "medium",
+        risk: "low",
+        variantA: {
+          source: "rule-only",
+          title: "[Data] 데이터 추출 부탁드립니다",
+          body: "## 요약\n데이터 추출 부탁드립니다\n\n## 누락 정보\ndataset_or_metric, purpose, deadline\n\n## 확인 질문\n요청 처리를 위해 다음 정보를 알려 주세요: dataset_or_metric, purpose, deadline"
+        },
+        variantB: {
+          source: "llm-assist",
+          title: "[Data] 데이터 추출 요청이 있으나, 데이터셋 또는 지표, 목적, 마감일 정보가 누락되어 추가 확인이 필요합니다.",
+          body: "## 요약\n데이터 추출 요청이 있으나, 데이터셋 또는 지표, 목적, 마감일 정보가 누락되어 추가 확인이 필요합니다.\n\n## 누락 정보\ndataset_or_metric, purpose, deadline\n\n## 확인 질문\n데이터 추출에 필요한 구체적인 데이터셋 또는 지표, 사용 목적, 마감일을 알려주시기 바랍니다."
+        }
+      },
+      {
+        id: "REQ-024",
+        decision: "review_required",
+        request: "[PHONE] 고객에게 연락해서 환불 상태를 알려주세요.",
+        priority: "high",
+        risk: "medium",
+        variantA: {
+          source: "rule-only",
+          title: "[CS] [PHONE] 고객에게 연락해서 환불 상태를 알려주세요",
+          body: "## 요약\n[PHONE] 고객에게 연락해서 환불 상태를 알려주세요\n\n## 원문 요청\n[PHONE] 고객에게 연락해서 환불 상태를 알려주세요.\n\n## 추출 필드\n```json\n{\n  \"affected_customer_or_user\": \"고객\",\n  \"customer\": \"고객\",\n  \"issue_detail\": \"[PHONE] 고객에게 연락해서 환불 상태를 알려주세요\",\n  \"required_action\": \"[PHONE] 고객에게 연락해서 환불 상태를 알려주세요\",\n  \"contact_channel\": \"[PHONE]\"\n}\n```\n\n## 누락 정보\n없음\n\n## 판단 근거\n- review_required: low_confidence\n- review_required: pii_detected"
+        },
+        variantB: {
+          source: "llm-assist",
+          title: "[CS] 고객에게 연락하여 환불 진행 상태를 안내 요청",
+          body: "## 요약\n고객에게 연락하여 환불 진행 상태를 안내 요청\n\n## 원문 요청\n[PHONE] 고객에게 연락해서 환불 상태를 알려주세요.\n\n## 추출 필드\n```json\n{\n  \"affected_customer_or_user\": \"고객\",\n  \"customer\": \"고객\",\n  \"issue_detail\": \"[PHONE] 고객에게 연락해서 환불 상태를 알려주세요\",\n  \"required_action\": \"[PHONE] 고객에게 연락해서 환불 상태를 알려주세요\",\n  \"contact_channel\": \"[PHONE]\"\n}\n```\n\n## 누락 정보\n없음\n\n## 판단 근거\n- review_required: low_confidence\n- review_required: pii_detected"
+        }
+      },
+      {
+        id: "REQ-028",
+        decision: "review_required",
+        request: "결재 승인 플로우에서 500 에러가 납니다. 승인 버튼 클릭 직후 발생하고 모든 승인 요청에서 재현됩니다.",
+        priority: "urgent",
+        risk: "low",
+        variantA: {
+          source: "rule-only",
+          title: "[Bug] 결재 승인 플로우에서 500 에러가 납니다",
+          body: "## 요약\n결재 승인 플로우에서 500 에러가 납니다\n\n## 원문 요청\n결재 승인 플로우에서 500 에러가 납니다. 승인 버튼 클릭 직후 발생하고 모든 승인 요청에서 재현됩니다.\n\n## 추출 필드\n```json\n{\n  \"symptom\": \"결재 승인 플로우에서 500 에러가 납니다\",\n  \"affected_customer_or_user\": \"모든 승인 요청\",\n  \"impact_scope\": \"모든 승인 요청\",\n  \"reproduction_steps\": \"승인 버튼 클릭 직후 발생하고 모든 승인 요청에서 재현됩니다\",\n  \"issue_detail\": \"승인 버튼 클릭 직후 발생하고 모든 승인 요청에서 재현됩니다\",\n  \"approval_target\": \"승인\"\n}\n```\n\n## 누락 정보\n없음\n\n## 판단 근거\n- review_required: multiple_team_candidates\n- review_required: low_confidence"
+        },
+        variantB: {
+          source: "llm-assist",
+          title: "[Bug] 결재 승인 플로우에서 승인 버튼 클릭 직후 500 에러가 발생하며 모든 승인 요청에서 재현됩니다.",
+          body: "## 요약\n결재 승인 플로우에서 승인 버튼 클릭 직후 500 에러가 발생하며 모든 승인 요청에서 재현됩니다.\n\n## 원문 요청\n결재 승인 플로우에서 500 에러가 납니다. 승인 버튼 클릭 직후 발생하고 모든 승인 요청에서 재현됩니다.\n\n## 추출 필드\n```json\n{\n  \"symptom\": \"결재 승인 플로우에서 500 에러가 납니다\",\n  \"affected_customer_or_user\": \"모든 승인 요청\",\n  \"impact_scope\": \"모든 승인 요청\",\n  \"reproduction_steps\": \"승인 버튼 클릭 직후 발생하고 모든 승인 요청에서 재현됩니다\",\n  \"issue_detail\": \"승인 버튼 클릭 직후 발생하고 모든 승인 요청에서 재현됩니다\",\n  \"approval_target\": \"승인\"\n}\n```\n\n## 누락 정보\n없음\n\n## 판단 근거\n- review_required: multiple_team_candidates\n- review_required: low_confidence"
+        }
+      }
+    ];
+
+    const storageKey = "opsflow-human-eval-2026-05-11";
+    let activeIndex = 0;
+    let scores = loadScores();
+
+    function loadScores() {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveScores() {
+      localStorage.setItem(storageKey, JSON.stringify(scores));
+      updateProgress();
+    }
+
+    function defaultVariantScore() {
+      return {
+        factuality: null,
+        actionability: null,
+        completeness: null,
+        privacy_safety: null,
+        reviewer_effort: null,
+        seconds: "",
+        notes: ""
+      };
+    }
+
+    function getVariantScore(caseId, variantKey) {
+      scores[caseId] ||= {};
+      scores[caseId][variantKey] ||= defaultVariantScore();
+      return scores[caseId][variantKey];
+    }
+
+    function renderCaseList() {
+      const list = document.getElementById("caseList");
+      list.innerHTML = "";
+      cases.forEach((item, index) => {
+        const li = document.createElement("li");
+        const button = document.createElement("button");
+        button.className = "case-button";
+        button.type = "button";
+        button.dataset.index = index;
+        button.innerHTML = `<span class="case-id">${item.id}</span><span class="case-title">${item.request}</span>`;
+        button.addEventListener("click", () => {
+          activeIndex = index;
+          render();
+        });
+        li.appendChild(button);
+        list.appendChild(li);
+      });
+    }
+
+    function render() {
+      const item = cases[activeIndex];
+      document.getElementById("caseHeading").textContent = item.id;
+      document.getElementById("requestText").textContent = item.request;
+      document.getElementById("caseMeta").innerHTML = [
+        item.decision,
+        `priority: ${item.priority}`,
+        `risk: ${item.risk}`
+      ].map(value => `<span class="tag">${value}</span>`).join("");
+
+      document.querySelectorAll(".case-button").forEach((button, index) => {
+        button.classList.toggle("active", index === activeIndex);
+      });
+
+      const grid = document.getElementById("variantGrid");
+      grid.innerHTML = "";
+      [["A", item.variantA], ["B", item.variantB]].forEach(([variantKey, variant]) => {
+        grid.appendChild(renderVariant(item.id, variantKey, variant));
+      });
+      document.getElementById("statusLine").textContent = "";
+      updateProgress();
+    }
+
+    function renderVariant(caseId, variantKey, variant) {
+      const state = getVariantScore(caseId, variantKey);
+      const section = document.createElement("article");
+      section.className = "variant";
+      section.innerHTML = `
+        <div class="variant-head">
+          <div class="variant-label">
+            <span>Variant ${variantKey}</span>
+            <span>출처 숨김</span>
+          </div>
+          <h3>${escapeHtml(variant.title)}</h3>
+        </div>
+        <div class="draft">${renderDraftBody(variant.body)}</div>
+        <div class="score-area"></div>
+      `;
+
+      const scoreArea = section.querySelector(".score-area");
+      criteria.forEach(criterion => {
+        const row = document.createElement("div");
+        row.className = "criterion";
+        row.innerHTML = `
+          <span class="criterion-label">
+            <strong>${criterionLabels[criterion]}</strong>
+            <small>${criterionHelp[criterion]}</small>
+          </span>
+        `;
+        const controls = document.createElement("div");
+        controls.className = "segmented";
+        [1, 3, 5].forEach(value => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = scoreLabels[value];
+          button.classList.toggle("selected", state[criterion] === value);
+          button.addEventListener("click", () => {
+            state[criterion] = value;
+            saveScores();
+            render();
+          });
+          controls.appendChild(button);
+        });
+        row.appendChild(controls);
+        scoreArea.appendChild(row);
+      });
+
+      const seconds = document.createElement("div");
+      seconds.className = "inputs";
+      seconds.innerHTML = `
+        <label for="${caseId}-${variantKey}-seconds">검토 시간(초)</label>
+        <input id="${caseId}-${variantKey}-seconds" type="number" min="0" step="1" value="${escapeHtml(String(state.seconds || ""))}">
+      `;
+      seconds.querySelector("input").addEventListener("input", event => {
+        state.seconds = event.target.value;
+        saveScores();
+      });
+      scoreArea.appendChild(seconds);
+
+      const notes = document.createElement("div");
+      notes.className = "inputs";
+      notes.innerHTML = `
+        <label for="${caseId}-${variantKey}-notes">메모</label>
+        <textarea id="${caseId}-${variantKey}-notes">${escapeHtml(state.notes || "")}</textarea>
+      `;
+      notes.querySelector("textarea").addEventListener("input", event => {
+        state.notes = event.target.value;
+        saveScores();
+      });
+      scoreArea.appendChild(notes);
+
+      return section;
+    }
+
+    function renderDraftBody(body) {
+      const sections = splitDraftSections(body);
+      return sections.map(section => {
+        const help = sectionHelp[section.title] || "이 항목이 원문 요청과 맞고 검토에 도움이 되는지 확인해 주세요.";
+        return `
+          <section class="draft-section">
+            <h4>${escapeHtml(section.title)}</h4>
+            <p class="draft-help">${escapeHtml(help)}</p>
+            ${renderDraftContent(section.title, section.content, body)}
+          </section>
+        `;
+      }).join("");
+    }
+
+    function renderDraftContent(title, content, body) {
+      if (title === "추출 필드") return renderExtractedFields(content, body);
+      if (title === "누락 정보") return renderMissingInfo(content, body);
+      if (title === "확인 질문") return renderQuestion(content, body);
+      if (title === "판단 근거") return renderReasons(content);
+      return `<pre class="draft-content raw">${escapeHtml(cleanDraftContent(content))}</pre>`;
+    }
+
+    function renderExtractedFields(content, body) {
+      const parsed = parseJsonContent(content);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return `<pre class="draft-content raw">${escapeHtml(cleanDraftContent(content))}</pre>`;
+      }
+      const entries = Object.entries(parsed).filter(([, value]) => value !== null && value !== "");
+      if (entries.length === 0) {
+        return `<p class="draft-content">없음</p>`;
+      }
+      const items = entries.map(([key, value]) => {
+        const label = key === "scope_or_amount" && String(value).includes("[ORDER_ID]")
+          ? "주문번호/식별자"
+          : fieldLabel(key);
+        return `<li><strong>${escapeHtml(label)}</strong><span>${escapeHtml(String(value))}</span></li>`;
+      }).join("");
+      return `<ul class="draft-list">${items}</ul>`;
+    }
+
+    function renderMissingInfo(content, body) {
+      const fields = normalizedMissingFields(content, body);
+      if (fields.length === 0) return `<p class="draft-content">없음</p>`;
+      const items = fields.map(field => `
+        <li>
+          <strong>${escapeHtml(fieldLabel(field))}</strong>
+          <span>${escapeHtml(fieldDescriptions[field] || "추가 확인이 필요한 정보입니다.")}</span>
+        </li>
+      `).join("");
+      return `<ul class="draft-list">${items}</ul>`;
+    }
+
+    function renderQuestion(content, body) {
+      return `<p class="draft-content">${escapeHtml(humanizeQuestion(content, body))}</p>`;
+    }
+
+    function renderReasons(content) {
+      const lines = cleanDraftContent(content)
+        .split("\n")
+        .map(line => line.replace(/^-\s*/, "").trim())
+        .filter(Boolean);
+      if (lines.length === 0) return `<p class="draft-content">별도 판단 근거 없음</p>`;
+      const items = lines.map(line => {
+        const trigger = line.includes(":") ? line.split(":").pop().trim() : line;
+        const message = reasonLabels[trigger] || line;
+        return `<li><span>${escapeHtml(message)}</span></li>`;
+      }).join("");
+      return `<ul class="draft-list">${items}</ul>`;
+    }
+
+    function splitDraftSections(body) {
+      const matches = [...body.matchAll(/^##\s+(.+)$/gm)];
+      if (matches.length === 0) {
+        return [{ title: "티켓 본문", content: body }];
+      }
+      return matches.map((match, index) => {
+        const start = match.index + match[0].length;
+        const end = index + 1 < matches.length ? matches[index + 1].index : body.length;
+        return {
+          title: match[1].trim(),
+          content: body.slice(start, end).trim()
+        };
+      });
+    }
+
+    function cleanDraftContent(content) {
+      return content
+        .replace(/^```json\s*/i, "")
+        .replace(/```\s*$/i, "")
+        .trim() || "내용 없음";
+    }
+
+    function parseJsonContent(content) {
+      try {
+        return JSON.parse(cleanDraftContent(content));
+      } catch {
+        return null;
+      }
+    }
+
+    function normalizedMissingFields(content, body) {
+      const fields = parseFieldTokens(content);
+      if (body.includes("결제 취소") && fields.includes("deadline")) {
+        return ["scope_or_amount", "approval_owner", "policy_reference"];
+      }
+      return fields;
+    }
+
+    function parseFieldTokens(content) {
+      const clean = cleanDraftContent(content);
+      if (clean === "없음" || clean === "내용 없음") return [];
+      return clean
+        .split(/[,\n]/)
+        .map(token => token.replace(/^-\s*/, "").split(":")[0].trim())
+        .filter(Boolean);
+    }
+
+    function humanizeQuestion(content, body) {
+      const clean = cleanDraftContent(content);
+      const fields = parseFieldTokens(clean.replace(/^요청 처리를 위해 다음 정보를 알려 주세요:\s*/, ""));
+      if (body.includes("결제 취소") && (clean.includes("deadline") || clean.includes("마감"))) {
+        return "결제 취소 처리 가능 여부를 판단할 수 있도록 승인권자, 적용 정책 또는 처리 범위/금액을 알려 주세요.";
+      }
+      if (fields.includes("dataset_or_metric") && fields.includes("purpose") && fields.includes("deadline")) {
+        return "필요한 데이터/지표, 사용 목적, 마감일을 알려 주세요.";
+      }
+      if (fields.length === 1 && fields[0] === "impact_scope") {
+        return "영향 범위가 특정 고객/사용자에 한정되는지, 전체에 영향을 주는지 알려 주세요.";
+      }
+      if (fields.length > 0 && clean.includes("요청 처리를 위해")) {
+        return `요청 처리를 위해 다음 정보를 알려 주세요: ${fields.map(fieldLabel).join(", ")}`;
+      }
+      return clean;
+    }
+
+    function fieldLabel(field) {
+      return fieldLabels[field] || field;
+    }
+
+    function updateProgress() {
+      const completed = cases.filter(item => ["A", "B"].every(variantKey => {
+        const state = getVariantScore(item.id, variantKey);
+        return criteria.every(criterion => state[criterion]);
+      })).length;
+      document.getElementById("progressText").textContent = `${completed} / ${cases.length}`;
+      document.getElementById("progressBar").style.width = `${(completed / cases.length) * 100}%`;
+    }
+
+    function buildRows() {
+      return cases.flatMap(item => [["A", item.variantA], ["B", item.variantB]].map(([variantKey, variant]) => {
+        const state = getVariantScore(item.id, variantKey);
+        return {
+          request_id: item.id,
+          variant: variantKey,
+          source: variant.source,
+          factuality: state.factuality || "",
+          actionability: state.actionability || "",
+          completeness: state.completeness || "",
+          privacy_safety: state.privacy_safety || "",
+          reviewer_effort: state.reviewer_effort || "",
+          seconds: state.seconds || "",
+          notes: state.notes || ""
+        };
+      }));
+    }
+
+    function toCsv(rows) {
+      const headers = Object.keys(rows[0]);
+      const lines = [headers.join(",")];
+      rows.forEach(row => {
+        lines.push(headers.map(header => csvCell(row[header])).join(","));
+      });
+      return lines.join("\n");
+    }
+
+    function csvCell(value) {
+      const text = String(value ?? "");
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+
+    function download(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    document.getElementById("exportCsv").addEventListener("click", () => {
+      download("opsflow-human-eval-2026-05-11.csv", toCsv(buildRows()), "text/csv;charset=utf-8");
+    });
+
+    document.getElementById("exportJson").addEventListener("click", () => {
+      download("opsflow-human-eval-2026-05-11.json", JSON.stringify(buildRows(), null, 2), "application/json");
+    });
+
+    document.getElementById("copyCsv").addEventListener("click", async () => {
+      await navigator.clipboard.writeText(toCsv(buildRows()));
+      document.getElementById("statusLine").textContent = "CSV가 클립보드에 복사되었습니다.";
+    });
+
+    document.getElementById("resetAll").addEventListener("click", () => {
+      if (!confirm("모든 평가 입력을 지우시겠습니까?")) return;
+      scores = {};
+      localStorage.removeItem(storageKey);
+      render();
+    });
+
+    renderCaseList();
+    render();
+  </script>
+</body>
+</html>

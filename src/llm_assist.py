@@ -2,17 +2,37 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from pydantic import BaseModel, ConfigDict, Field
+
+from src.human_text import (
+    REQUEST_TYPE_LABELS,
+    RISK_LABELS,
+    clarification_question,
+    format_missing_fields_inline,
+)
 from src.privacy import PrivacyMaskingResult
 from src.rule_engine import RuleEngineEvaluation
-from src.schema import AutomationDecision, LlmAssistTrace, RawRequest, RequestType, RiskLevel
+from src.schema import AutomationDecision, LlmAssistTrace, RawRequest, RequestType
 
 
 DEFAULT_MODEL = "gpt-4.1-mini"
+
+
+class LlmAssistStructuredResponse(BaseModel):
+    """Structured LLM response accepted by the assist layer."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    summary: str = Field(min_length=1)
+    suggested_ticket_title: str | None = None
+    suggested_ticket_body: str = Field(min_length=1)
+    suggested_clarification: str | None = None
 
 
 @dataclass(frozen=True)
@@ -61,13 +81,13 @@ def assist_request(
     use_llm = _llm_enabled(enabled) and requested
     selected_model = model_name or os.getenv("OPSFLOW_LLM_MODEL") or DEFAULT_MODEL
 
-    fallback_summary = _fallback_summary(input_text)
+    fallback_summary = _fallback_summary(input_text, evaluation)
     fallback_title = _fallback_ticket_title(evaluation, fallback_summary, automation_decision)
     fallback_body = _fallback_ticket_body(
         input_text,
         evaluation,
         automation_decision,
-        _clarification_question(evaluation),
+        _clarification_question(evaluation, input_text),
     )
 
     if not requested:
@@ -89,7 +109,7 @@ def assist_request(
             trace=LlmAssistTrace(
                 used=False,
                 reason=reason,
-                suggested_clarification=_clarification_question(evaluation),
+                suggested_clarification=_clarification_question(evaluation, input_text),
             ),
             input_text=input_text,
             summary=fallback_summary,
@@ -136,16 +156,21 @@ def _assist_with_openai(
                 },
                 {"role": "user", "content": prompt},
             ],
+            response_format=_structured_response_format(),
             temperature=0,
         )
-        content = response.choices[0].message.content or ""
+        message = response.choices[0].message
+        refusal = getattr(message, "refusal", None)
+        if refusal:
+            raise ValueError(f"OpenAI structured response refusal: {refusal}")
+        parsed_response = _parse_structured_response(message.content or "")
     except Exception as exc:  # pragma: no cover - network/API fallback path
         return LlmAssistResult(
             trace=LlmAssistTrace(
                 used=False,
                 reason="llm_assist_error_fallback",
                 model_name=model_name,
-                suggested_clarification=_clarification_question(evaluation),
+                suggested_clarification=_clarification_question(evaluation, input_text),
                 error=_sanitize_error(str(exc)),
             ),
             input_text=input_text,
@@ -159,12 +184,16 @@ def _assist_with_openai(
             used=True,
             reason="llm_assist_enabled",
             model_name=model_name,
-            suggested_clarification=_clarification_question(evaluation),
+            suggested_clarification=(
+                parsed_response.suggested_clarification
+                or _clarification_question(evaluation, input_text)
+            ),
         ),
         input_text=input_text,
-        summary=fallback_summary,
-        suggested_ticket_title=fallback_title,
-        suggested_ticket_body=content.strip() or fallback_body,
+        summary=parsed_response.summary or fallback_summary,
+        suggested_ticket_title=_clean_optional(parsed_response.suggested_ticket_title)
+        or fallback_title,
+        suggested_ticket_body=parsed_response.suggested_ticket_body or fallback_body,
     )
 
 
@@ -214,17 +243,68 @@ def _prompt(
     evaluation: RuleEngineEvaluation,
     automation_decision: AutomationDecision,
 ) -> str:
-    missing = ", ".join(evaluation.missing_fields) if evaluation.missing_fields else "없음"
+    missing = format_missing_fields_inline(evaluation.missing_fields)
     return (
         f"원문 요청(PII가 있으면 마스킹됨): {input_text}\n"
-        f"요청 유형: {evaluation.request_type.value}\n"
+        f"요청 유형: {REQUEST_TYPE_LABELS.get(evaluation.request_type, evaluation.request_type.value)}\n"
         f"담당 팀: {evaluation.target_team.value}\n"
         f"우선순위: {evaluation.priority.value}\n"
-        f"위험도: {evaluation.risk_level.value}\n"
+        f"위험도: {RISK_LABELS.get(evaluation.risk_level, evaluation.risk_level.value)}\n"
         f"누락 필드: {missing}\n"
         f"자동화 결정: {automation_decision.value}\n\n"
-        "티켓 초안 또는 검토자가 사용할 간단한 정리문을 작성해 주세요."
+        "원문에 없는 사실은 만들지 말고, 검토자가 바로 사용할 수 있는 "
+        "요약, 티켓 제목, 티켓 본문, 확인 질문을 작성해 주세요. "
+        "확인 질문이 필요 없으면 null로 둡니다."
     )
+
+
+def _structured_response_format() -> dict[str, object]:
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "opsflow_llm_assist",
+            "strict": True,
+            "schema": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "summary": {
+                        "type": "string",
+                        "description": "원문 근거만 사용한 한 문장 요약",
+                    },
+                    "suggested_ticket_title": {
+                        "anyOf": [{"type": "string"}, {"type": "null"}],
+                        "description": "티켓 제목. reject면 null 가능",
+                    },
+                    "suggested_ticket_body": {
+                        "type": "string",
+                        "description": "담당자가 검토할 한국어 티켓 초안",
+                    },
+                    "suggested_clarification": {
+                        "anyOf": [{"type": "string"}, {"type": "null"}],
+                        "description": "누락 정보가 있을 때 요청자에게 물을 질문",
+                    },
+                },
+                "required": [
+                    "summary",
+                    "suggested_ticket_title",
+                    "suggested_ticket_body",
+                    "suggested_clarification",
+                ],
+            },
+        },
+    }
+
+
+def _parse_structured_response(content: str) -> LlmAssistStructuredResponse:
+    return LlmAssistStructuredResponse.model_validate(json.loads(content))
+
+
+def _clean_optional(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
 
 
 def _llm_enabled(enabled: bool | None) -> bool:
@@ -237,7 +317,25 @@ def _env_truthy(name: str) -> bool:
     return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _fallback_summary(text: str, max_length: int = 80) -> str:
+def _fallback_summary(
+    text: str,
+    evaluation: RuleEngineEvaluation | None = None,
+    max_length: int = 80,
+) -> str:
+    if evaluation is not None:
+        if evaluation.request_type == RequestType.DATA_REQUEST and evaluation.missing_fields:
+            if "지난번" in text or "다시" in text:
+                return "이전 데이터 재요청으로, 데이터 대상과 목적 확인 필요"
+            return "데이터 추출 요청으로, 데이터 대상과 목적 확인 필요"
+        if evaluation.request_type == RequestType.BUG_REPORT and evaluation.missing_fields:
+            if "결제" in text:
+                return "결제 문제 확인 요청"
+            return "장애/버그 확인 요청"
+        if evaluation.request_type == RequestType.CUSTOMER_SUPPORT and evaluation.missing_fields:
+            return "고객 문의 처리 요청으로, 문제 내용과 조치 확인 필요"
+        if evaluation.request_type == RequestType.APPROVAL_REQUEST and evaluation.missing_fields:
+            return "승인 요청으로, 처리 범위와 승인권자 확인 필요"
+
     first_sentence = text.split(".")[0].strip()
     summary = first_sentence or text.strip()
     if len(summary) <= max_length:
@@ -262,26 +360,28 @@ def _fallback_ticket_body(
     automation_decision: AutomationDecision,
     clarification_question: str | None,
 ) -> str:
-    missing = ", ".join(evaluation.missing_fields) if evaluation.missing_fields else "없음"
+    missing = format_missing_fields_inline(evaluation.missing_fields)
     question = f"\n확인 질문: {clarification_question}" if clarification_question else ""
     return (
         f"원문 요청:\n{input_text}\n\n"
-        f"요청 유형: {evaluation.request_type.value}\n"
+        f"요청 유형: {REQUEST_TYPE_LABELS.get(evaluation.request_type, evaluation.request_type.value)}\n"
         f"담당 팀: {evaluation.target_team.value}\n"
         f"우선순위: {evaluation.priority.value}\n"
-        f"위험도: {evaluation.risk_level.value}\n"
+        f"위험도: {RISK_LABELS.get(evaluation.risk_level, evaluation.risk_level.value)}\n"
         f"자동화 결정: {automation_decision.value}\n"
         f"누락 필드: {missing}"
         f"{question}"
     )
 
 
-def _clarification_question(evaluation: RuleEngineEvaluation) -> str | None:
-    if evaluation.missing_fields:
-        fields = ", ".join(evaluation.missing_fields)
-        return f"요청 처리를 위해 다음 정보를 알려 주세요: {fields}"
-    if evaluation.request_type == RequestType.OTHER:
-        return "요청 대상과 필요한 조치를 구체적으로 알려 주세요."
-    if evaluation.risk_level == RiskLevel.HIGH:
-        return "처리 전 승인권자와 안전 검토 범위를 확인해 주세요."
-    return None
+def _clarification_question(
+    evaluation: RuleEngineEvaluation,
+    input_text: str = "",
+) -> str | None:
+    return clarification_question(
+        request_type=evaluation.request_type,
+        risk_level=evaluation.risk_level,
+        missing_fields=evaluation.missing_fields,
+        extracted_fields=evaluation.extracted_fields,
+        text=input_text,
+    )
