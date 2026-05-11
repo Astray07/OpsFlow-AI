@@ -9,6 +9,7 @@ from pathlib import Path
 
 from src.evaluate import write_evaluation_report
 from src.github_client import write_github_dry_run
+from src.llm_assist import load_env_file, should_override_env_file
 from src.normalizer import NormalizationResult, normalize_file
 from src.qa_assertions import write_qa_assertion_report
 from src.review_queue import build_review_queue, review_queue_rows
@@ -39,9 +40,17 @@ def run_pipeline(
     gold_path: str | Path | None = Path("data/labeled_requests.csv"),
     *,
     enable_llm_assist: bool | None = None,
+    dotenv_override: bool | None = None,
 ) -> NormalizationResult:
     """Run the rule-only normalization pipeline and write JSON outputs."""
 
+    load_env_file(
+        override_existing=(
+            should_override_env_file()
+            if dotenv_override is None
+            else dotenv_override
+        )
+    )
     result = normalize_file(
         input_path,
         config_dir,
@@ -112,6 +121,15 @@ def main() -> None:
         action="store_true",
         help="Enable OpenAI-backed LLM assist. Requires OPENAI_API_KEY in env or .env.",
     )
+    run_parser.add_argument(
+        "--prefer-dotenv",
+        action="store_true",
+        default=None,
+        help=(
+            "Let local .env override inherited environment values. "
+            "Use only for local debugging."
+        ),
+    )
 
     args = parser.parse_args()
     if args.command == "run":
@@ -122,6 +140,7 @@ def main() -> None:
             args.output,
             gold_path,
             enable_llm_assist=args.enable_llm_assist,
+            dotenv_override=args.prefer_dotenv,
         )
         print(
             "Processed "

@@ -69,7 +69,7 @@ OPENAI_API_KEY=<key>
 ```
 
 PII가 감지된 요청은 LLM assist 계층에 `raw_text`가 아니라 `masked_text`만 전달하도록 구현되어 있습니다.
-CLI 실행에서는 프로젝트 로컬 `.env` 값이 상위 프로세스에 남아 있는 같은 이름의 환경변수보다 우선합니다.
+기본 우선순위는 운영 안전성을 위해 상위 프로세스 환경변수 > `.env`입니다. 로컬에서 상위 환경변수에 오래된 키가 남아 있을 때만 `--prefer-dotenv` 또는 `OPSFLOW_ENV=local`로 프로젝트 `.env`를 우선할 수 있습니다.
 
 LLM assist 실행:
 
@@ -79,7 +79,8 @@ python -m src.main run \
   --config config/ \
   --output outputs/rule_tuned_llm_enabled \
   --dry-run \
-  --enable-llm-assist
+  --enable-llm-assist \
+  --prefer-dotenv
 ```
 
 API 오류가 발생하면 키는 로그에서 마스킹되고 rule-only fallback으로 계속 처리됩니다.
@@ -87,10 +88,13 @@ API 오류가 발생하면 키는 로그에서 마스킹되고 rule-only fallbac
 2026-05-11 LLM assist 실행 확인:
 
 ```text
-llm_used: 28
+llm_used: 25
 llm_errors: 0
+llm_assist_not_needed: 5
 QA assertion failures: 0
 ```
+
+rule tuning 이후 confidence가 충분한 케이스가 늘면서 LLM 호출 후보는 28건에서 25건으로 줄었습니다.
 
 LLM assist는 현재 분류/라우팅/결정을 덮어쓰지 않고 티켓 본문과 검토 보조 문구를 개선하는 계층입니다. 따라서 gold label 기반 정량 지표는 rule-tuned rule-only와 동일합니다.
 
@@ -117,7 +121,8 @@ outputs/  실행 결과 산출물
 ```text
 docs/external_seed_notes.md   공개 issue 기반 seed 수집 과정과 결과
 docs/human_eval_template.md   LLM assist 품질 비교용 human-eval 양식
-docs/human_eval_run_2026-05-11.md   LLM assist 비교 실행 시도와 invalid key 결과
+docs/human_eval_run_2026-05-11.md   LLM assist 비교 실행과 dotenv 우선순위 검증
+docs/security_notes.md        로컬 dotenv와 운영 secret 우선순위 가이드
 docs/agent_validation_prompt.md     외부 검증 에이전트용 프롬프트
 ```
 

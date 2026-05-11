@@ -101,7 +101,7 @@ file_prefix_ok: true
 
 기존 `load_env_file()`은 이미 같은 이름의 환경변수가 있으면 `.env` 값을 덮어쓰지 않았습니다. 따라서 CLI는 `.env`의 정상 키가 아니라 상위 환경에 남아 있던 오래된/잘못된 키로 OpenAI를 호출하고 있었습니다.
 
-수정:
+초기 로컬 수정:
 
 ```text
 assist_request()에서 load_env_file(override_existing=True)를 사용하도록 변경했다.
@@ -133,4 +133,41 @@ risk_level_accuracy: 100.0%
 decision_accuracy: 70.0%
 false_automation_rate: 0.0%
 review_recall: 100.0%
+```
+
+## Operational Safety Follow-up
+
+작성일: 2026-05-11
+
+외부 검증 피드백을 반영해 dotenv override를 운영 기본 동작에서 제거했습니다.
+
+최종 설계:
+
+```text
+1. assist_request()는 .env를 직접 로드하지 않는다.
+2. CLI 진입점에서 load_env_file()을 1회 호출한다.
+3. 기본 우선순위는 프로세스 환경변수 > .env다.
+4. 로컬 디버깅에서만 --prefer-dotenv, OPSFLOW_ENV=local, OPSFLOW_DOTENV_OVERRIDE=1로 .env override를 명시한다.
+```
+
+최종 재실행 명령:
+
+```bash
+python -m src.main run --input data/sample_requests.csv --config config --output outputs/human_eval_llm_assist_fixed --dry-run --gold data/labeled_requests.csv --enable-llm-assist --prefer-dotenv
+```
+
+최종 결과:
+
+```text
+llm_used: 25
+llm_errors: 0
+llm_assist_not_needed: 5
+QA assertion failures: 0
+```
+
+운영 메모:
+
+```text
+운영에서는 --prefer-dotenv를 사용하지 않고, secret manager 또는 프로세스 환경변수 주입값을 우선한다.
+운영 이미지에는 .env를 포함하지 않는다.
 ```

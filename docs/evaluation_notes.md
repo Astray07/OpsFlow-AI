@@ -234,7 +234,7 @@ review_recall: 100.0%
 
 작성일: 2026-05-11
 
-유효한 `OPENAI_API_KEY`를 프로세스 환경변수로 주입해 다시 실행했다. 키 값은 출력하지 않았고, 산출물 내 `sk-` 문자열 잔존 여부도 확인했다.
+이 섹션은 초기 rule tuning 직후의 역사적 실행 기록이다. 유효한 `OPENAI_API_KEY`를 프로세스 환경변수로 주입해 다시 실행했다. 키 값은 출력하지 않았고, 산출물 내 `sk-` 문자열 잔존 여부도 확인했다.
 
 실행 명령:
 
@@ -273,6 +273,19 @@ LLM assist는 현재 request_type, target_team, priority, risk_level, automation
 대신 suggested_ticket_body와 review 보조 문구 품질을 개선하는 역할이다.
 실제 API 호출이 성공해도 정책 불변식과 QA assertion은 유지됐다.
 ```
+
+후속 패치 기준 최신 LLM assist 결과:
+
+```text
+llm_used: 25
+llm_errors: 0
+llm_assist_not_needed: 5
+decision_accuracy: 70.0%
+false_automation_rate: 0.0%
+review_recall: 100.0%
+```
+
+rule/extractor 보강 이후 confidence가 충분한 케이스가 늘어 LLM 호출 후보가 28건에서 25건으로 감소했다. 로컬 `.env`와 상위 환경변수 우선순위 이슈 및 최종 재실행 결과는 `docs/human_eval_run_2026-05-11.md`에 기록했다.
 
 보안 메모:
 
@@ -414,6 +427,7 @@ config/localization.yml은 v0.3 확장 포인트로 유지한다.
 
 ```text
 공개 GitHub issue 기반 paraphrase seed를 실제 입력/라벨 세트로 편입해 synthetic-only 평가의 한계를 줄인다.
+단, 이 평가는 OOD generalization 평가가 아니라 seed 관찰 후 config를 보강한 in-distribution regression smoke test다.
 ```
 
 추가 파일:
@@ -449,7 +463,9 @@ python -m src.main run --input data/external_seed_samples.csv --config config --
 
 ```text
 외부 seed 8건에서는 request classification, routing, priority, risk, decision이 모두 gold label과 일치했다.
-403/Forbidden, dashboard filter, access permission 표현을 config keyword와 extraction rule에 추가해 generalization gap을 줄였다.
+다만 403/Forbidden, dashboard filter, access permission 표현을 seed 관찰 후 config keyword와 extraction rule에 추가했으므로,
+이 100%는 독립 test set 성능이 아니라 회귀 방지용 smoke test로 해석한다.
+v0.3에서는 rule freeze 후 신규 seed 30~50건을 별도 라벨러가 라벨링해 OOD 성능을 측정한다.
 ```
 
 ## Phase 6 Human-Eval Attempt
@@ -476,7 +492,7 @@ QA assertion failures: 0
 해석:
 
 ```text
-이번 실행은 .env의 OPENAI_API_KEY가 API에서 invalid_api_key로 거절되어 실제 LLM assist 품질 비교를 수행하지 못했다.
-오류 메시지는 key 값을 [REDACTED_OPENAI_API_KEY]로 마스킹한다.
-유효한 키로 재실행하면 docs/human_eval_template.md 기준으로 rule-only 대비 ticket body와 reviewer assist 품질을 채점한다.
+초기 실행은 상위 프로세스 환경변수에 남아 있던 stale OPENAI_API_KEY가 프로젝트 .env 값을 가로막아 invalid_api_key로 실패했다.
+이후 dotenv override를 CLI/local 신호로 분리하고 --prefer-dotenv로 재실행해 llm_used 25, llm_errors 0을 확인했다.
+상세 root cause와 운영 안전성 후속 조치는 docs/human_eval_run_2026-05-11.md와 docs/security_notes.md에 기록했다.
 ```

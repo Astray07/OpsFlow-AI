@@ -2,7 +2,12 @@ import os
 from pathlib import Path
 
 from src.decision import decide_automation
-from src.llm_assist import assist_request, load_env_file, should_use_llm_assist
+from src.llm_assist import (
+    assist_request,
+    load_env_file,
+    should_override_env_file,
+    should_use_llm_assist,
+)
 from src.privacy import mask_pii
 from src.rule_engine import evaluate_request
 from src.schema import AutomationDecision, RawRequest
@@ -57,10 +62,12 @@ def test_assist_request_uses_masked_text_for_pii_when_llm_is_skipped() -> None:
 def test_env_example_uses_supported_llm_variable_names(monkeypatch) -> None:
     monkeypatch.delenv("OPSFLOW_LLM_MODEL", raising=False)
     monkeypatch.delenv("OPS_FLOW_MODEL", raising=False)
+    monkeypatch.delenv("OPSFLOW_ENV", raising=False)
 
     load_env_file(".env.example")
 
     assert "OPSFLOW_LLM_MODEL" in os.environ
+    assert "OPSFLOW_ENV" in os.environ
     assert "OPS_FLOW_MODEL" not in os.environ
 
 
@@ -77,3 +84,17 @@ def test_load_env_file_can_override_inherited_environment(
 
     load_env_file(env_path, override_existing=True)
     assert os.environ["OPENAI_API_KEY"] == "sk-from-file"
+
+
+def test_should_override_env_file_requires_local_signal(monkeypatch) -> None:
+    monkeypatch.delenv("OPSFLOW_ENV", raising=False)
+    monkeypatch.delenv("OPSFLOW_DOTENV_OVERRIDE", raising=False)
+
+    assert should_override_env_file() is False
+
+    monkeypatch.setenv("OPSFLOW_ENV", "local")
+    assert should_override_env_file() is True
+
+    monkeypatch.setenv("OPSFLOW_ENV", "prod")
+    monkeypatch.setenv("OPSFLOW_DOTENV_OVERRIDE", "1")
+    assert should_override_env_file() is True

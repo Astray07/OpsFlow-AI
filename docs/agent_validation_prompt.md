@@ -17,6 +17,7 @@ E:\AI\OpsFlow AI 프로젝트를 독립적으로 검증해 주세요.
 - python -m ruff check src tests
 - python -m src.main run --input data/sample_requests.csv --config config --output outputs/agent_validation --dry-run --gold data/labeled_requests.csv
 - python -m src.main run --input data/external_seed_samples.csv --config config --output outputs/agent_validation_external_seed --dry-run --gold data/external_seed_labeled_requests.csv
+- 로컬 LLM assist까지 검증할 경우: python -m src.main run --input data/sample_requests.csv --config config --output outputs/agent_validation_llm --dry-run --gold data/labeled_requests.csv --enable-llm-assist --prefer-dotenv
 
 필수 확인:
 1. sample baseline 지표
@@ -46,7 +47,8 @@ E:\AI\OpsFlow AI 프로젝트를 독립적으로 검증해 주세요.
 
 6. LLM assist human-eval 상태
    - docs/human_eval_template.md와 docs/human_eval_run_2026-05-11.md를 검토해 주세요.
-   - 현재 LLM run이 invalid_api_key로 실패한 경우, 이것을 blocker로 볼지 operational note로 볼지 판단해 주세요.
+   - docs/security_notes.md 기준으로 dotenv override가 로컬 전용으로 제한되어 있는지 확인해 주세요.
+   - LLM run은 최신 기준 llm_used 25, llm_errors 0을 기대합니다. 단, 키가 없거나 권한이 없으면 fallback 동작과 redaction만 확인해 주세요.
 
 보고서 형식:
 1. 실행 결과 요약

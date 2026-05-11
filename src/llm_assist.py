@@ -52,7 +52,6 @@ def assist_request(
 ) -> LlmAssistResult:
     """Run optional LLM assist or return a deterministic skipped trace."""
 
-    load_env_file(override_existing=True)
     input_text = privacy_result.masked_text if privacy_result.pii_detected else raw_request.raw_text
     requested = should_use_llm_assist(evaluation, automation_decision)
     use_llm = _llm_enabled(enabled) and requested
@@ -185,6 +184,15 @@ def load_env_file(
         if not key or (key in os.environ and not override_existing):
             continue
         os.environ[key] = _strip_quotes(value.strip())
+
+
+def should_override_env_file() -> bool:
+    """Return whether local dotenv should override inherited environment values."""
+
+    return (
+        os.getenv("OPSFLOW_ENV", "").strip().lower() == "local"
+        or _env_truthy("OPSFLOW_DOTENV_OVERRIDE")
+    )
 
 
 def _strip_quotes(value: str) -> str:

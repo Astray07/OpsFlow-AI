@@ -31,7 +31,9 @@ synthetic 샘플만으로 rule을 조정할 때 생길 수 있는 자기확증 �
 ## 한계
 
 ```text
-1. 아직 gold label로 편입하지 않은 seed pool입니다.
-2. 공개 issue는 개발자 커뮤니티 표현이 많아 실제 사내 업무 요청보다 기술적으로 상세할 수 있습니다.
-3. 다음 단계에서는 EXT-* 중 5건 이상을 labeled_requests 확장 세트로 편입하고, synthetic-only baseline과 비교합니다.
+1. 현재 외부 seed 라벨과 config 보강은 같은 작성자가 수행했습니다.
+2. seed 관찰 후 403/Forbidden, dashboard filter, access permission 표현을 config에 추가했으므로 train-test leakage 가능성을 배제할 수 없습니다.
+3. 따라서 external seed 8건 100%는 OOD generalization이 아니라 in-distribution regression smoke test로만 해석합니다.
+4. 공개 issue는 개발자 커뮤니티 표현이 많아 실제 사내 업무 요청보다 기술적으로 상세할 수 있습니다.
+5. v0.3에서는 rule을 freeze한 뒤 신규 seed 30~50건을 별도 라벨러가 라벨링해 독립 평가합니다.
 ```

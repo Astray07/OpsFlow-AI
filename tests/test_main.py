@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 from src.main import run_pipeline
@@ -51,3 +52,33 @@ def test_run_pipeline_writes_normalized_requests_and_execution_log(tmp_path: Pat
     assert "request_id,suggested_type,suggested_team" in review_queue_text
     assert "# Evaluation Report" in evaluation_report
     assert "# QA Assertion Report" in qa_report
+
+
+def test_run_pipeline_can_prefer_local_dotenv_for_cli(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    input_path = tmp_path / "requests.csv"
+    output_dir = tmp_path / "outputs"
+    env_path = tmp_path / ".env"
+    input_path.write_text(
+        (
+            "request_id,requester,channel,raw_text,created_at,customer_tier\n"
+            'REQ-CLI-ENV,kim,slack,"결제 안 됩니다.",2026-05-11T09:00:00+09:00,standard\n'
+        ),
+        encoding="utf-8",
+    )
+    env_path.write_text("OPENAI_API_KEY=sk-from-local-file\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1]))
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-from-parent")
+
+    run_pipeline(
+        input_path,
+        Path(__file__).resolve().parents[1] / "config",
+        output_dir,
+        gold_path=None,
+        dotenv_override=True,
+    )
+
+    assert os.environ["OPENAI_API_KEY"] == "sk-from-local-file"
