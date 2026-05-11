@@ -1,0 +1,26 @@
+version: "review_policy.2026-05-11"
+
+action_priority:
+  - reject
+  - security_review
+  - route_to_owner
+  - ask_clarification
+
+actions:
+  ask_clarification:
+    when:
+      - required_missing_fields_present
+    default_owner: requester
+
+  route_to_owner:
+    when:
+      - multiple_team_candidates
+      - low_confidence
+    default_owner: ops_triage
+
+  security_review:
+    when:
+      - unsafe_or_disallowed_request
+      - pii_detected
+      - high_risk_action
+    default_owner: security_or_admin

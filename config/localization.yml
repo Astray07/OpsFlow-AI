@@ -1,0 +1,29 @@
+version: "localization.2026-05-11"
+
+default_language: ko
+
+supported_languages:
+  - ko
+  - en
+
+aliases:
+  bug_report:
+    ko:
+      - 오류
+      - 버그
+      - 장애
+    en:
+      - error
+      - bug
+      - outage
+
+  data_request:
+    ko:
+      - 데이터
+      - 리포트
+      - 쿼리
+    en:
+      - data
+      - report
+      - query
+

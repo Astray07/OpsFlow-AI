@@ -1,0 +1,9 @@
+seed_id,source_url,collected_at,raw_text_pattern,notes
+EXT-001,https://github.com/opensearch-project/OpenSearch-Dashboards/issues/10439,2026-05-11,"대시보드 메인 페이지 접속 직후 500 에러가 발생합니다. 특정 버전과 브라우저 환경에서 재현되고 로그에는 서버 예외가 남습니다.","public issue paraphrase; bug_report seed"
+EXT-002,https://github.com/metabase/metabase/issues/14508,2026-05-11,"초대받은 사용자가 비밀번호 재설정 성공 메시지를 본 뒤에도 로그인 오류로 로그인할 수 없습니다. Chrome과 Edge에서 모두 확인했습니다.","public issue paraphrase; customer_support/bug seed"
+EXT-003,https://github.com/apache/superset/issues/32552,2026-05-11,"embedded dashboard에서 guest role로 차트를 열면 403 권한 오류가 나고 권한을 추가해도 해결되지 않습니다.","public issue paraphrase; permission/support seed"
+EXT-004,https://github.com/ag-grid/ag-grid/issues/3842,2026-05-11,"그리드를 Excel 또는 CSV로 export할 때 화면의 column group 정보가 파일에 포함되지 않습니다.","public issue paraphrase; data/export seed"
+EXT-005,https://github.com/grafana/grafana/issues/74891,2026-05-11,"대시보드에 패널이 너무 많아 제목 regex로 패널을 필터링하고 필터 상태를 URL로 공유하는 기능이 필요합니다.","public issue paraphrase; feature_request seed"
+EXT-006,https://github.com/PostHog/posthog/issues/15999,2026-05-11,"대시보드 필터나 기간을 바꾸면 SQL 기반 insight에도 같은 필터가 적용되면 좋겠습니다.","public issue paraphrase; feature_request seed"
+EXT-007,https://github.com/wazuh/wazuh/issues/32193,2026-05-11,"취약점 대시보드에서 agent group과 label 기준으로 필터링하고 제한된 접근 권한을 설정할 수 있게 해 주세요.","public issue paraphrase; internal_ops/permission seed"
+EXT-008,https://github.com/apache/superset/issues/25870,2026-05-11,"Angular 앱에 embedded dashboard를 붙이면 관리자 계정에서도 403 Forbidden이 반복됩니다. CORS와 guest role 설정을 확인했습니다.","public issue paraphrase; customer_support/bug seed"

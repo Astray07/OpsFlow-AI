@@ -1,0 +1,20 @@
+version: "scoring.2026-05-11"
+
+request_type_confidence:
+  calculation_mode: "per_candidate"
+  candidate_preselect_top_n: 3
+  keyword_weight_normalization: "matched_weight_sum / active_keyword_total_weight"
+  keyword_score_weight: 0.50
+  required_field_score_weight: 0.35
+  metadata_score_weight: 0.15
+  close_candidate_gap: 0.15
+  close_candidate_penalty: 0.10
+  fallback_to_other_below: 0.50
+
+target_team_confidence:
+  request_type_confidence_weight: 0.55
+  team_mapping_score_weight: 0.30
+  team_keyword_score_weight: 0.15
+  multi_team_gap: 0.15
+  multi_team_penalty: 0.10
+

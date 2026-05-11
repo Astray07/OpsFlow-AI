@@ -1,0 +1,67 @@
+version: "risk.2026-05-11"
+
+matching_semantics:
+  within_same_bucket: "OR"
+  between_buckets: "OR"
+  final_risk: "highest_matched_level_wins"
+
+high:
+  request_types:
+    - approval_request
+  internal_ops_side_effect_keywords:
+    - 권한
+    - 삭제
+    - 운영 데이터
+    - 보안 사고
+    - 관리자 로그인
+  keywords:
+    - 결제 취소
+    - 환불 처리 승인
+    - 권한 부여
+    - 권한 열어
+    - 접근 권한
+    - 제한된 접근 권한
+    - 계정 삭제
+    - 삭제
+    - 운영 데이터 수정
+    - 운영 데이터
+    - 보안 사고
+    - 개인정보 원문
+    - 보안 우회
+    - refund
+    - permission
+    - delete account
+    - security incident
+  side_effects:
+    external_write:
+      - 운영 데이터 수정
+      - 운영 데이터
+      - 삭제
+    permission_change:
+      - 권한 부여
+      - 권한 열어
+      - 접근 권한
+      - 제한된 접근 권한
+      - 계정 삭제
+      - permission
+      - delete account
+    payment_or_refund:
+      - 결제 취소
+      - 환불 처리 승인
+      - refund
+    security_incident:
+      - 보안 사고
+      - security incident
+
+medium:
+  keywords:
+    - 개인정보
+    - 긴급
+    - 첨부
+    - pii
+    - urgent
+
+low:
+  side_effects:
+    draft_only: []
+    read_only: []

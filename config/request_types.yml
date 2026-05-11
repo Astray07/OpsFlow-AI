@@ -1,0 +1,153 @@
+version: "request_types.2026-05-11"
+
+bug_report:
+  keywords:
+    오류: 0.4
+    버그: 0.4
+    장애: 0.5
+    에러: 0.4
+    재현: 0.3
+    안됨: 0.3
+    결제: 0.3
+    실패: 0.3
+    실패율: 0.4
+    timeout: 0.4
+    빈 화면: 0.4
+    로그인 오류: 0.4
+    로그인할 수 없습니다: 0.4
+    "403": 0.5
+    Forbidden: 0.5
+    권한 오류: 0.5
+    서버 예외: 0.4
+    해결되지 않습니다: 0.3
+    API: 0.3
+    latency: 0.4
+    5초 이상: 0.3
+    전체 요청: 0.3
+    응답 시간: 0.4
+    error: 0.4
+    bug: 0.4
+    outage: 0.5
+  metadata_conditions:
+    channel:
+      - slack
+      - form
+  default_team: engineering
+  required_fields:
+    - symptom
+    - affected_customer_or_user
+    - impact_scope
+
+data_request:
+  keywords:
+    데이터: 0.4
+    추출: 0.4
+    리포트: 0.3
+    쿼리: 0.3
+    대시보드: 0.3
+    가입자: 0.3
+    전환율: 0.3
+    사용량: 0.3
+    매출: 0.3
+    캠페인: 0.3
+    처리 건수: 0.3
+    CSV: 0.3
+    PDF: 0.3
+    data: 0.4
+    report: 0.3
+    query: 0.3
+    dashboard: 0.3
+  default_team: data
+  required_fields:
+    - dataset_or_metric
+    - purpose
+    - deadline
+
+feature_request:
+  keywords:
+    기능: 0.4
+    개선: 0.3
+    요청: 0.2
+    추가: 0.3
+    필터: 0.3
+    필터를 추가: 0.7
+    필터링: 0.4
+    필터 상태: 0.3
+    URL로 공유: 0.3
+    적용되면 좋겠습니다: 0.5
+    SQL 기반 insight: 0.5
+    설정할 수 있게: 0.4
+    추가하고 싶: 0.5
+    추가하고 싶습니다: 0.7
+    옵션: 0.3
+    정렬: 0.3
+    최신순: 0.3
+    템플릿: 0.3
+    위젯: 0.3
+    목표 대비: 0.3
+    한눈에: 0.3
+    feature: 0.4
+    improvement: 0.3
+  default_team: product
+  required_fields:
+    - user_need
+    - expected_outcome
+
+customer_support:
+  keywords:
+    고객: 0.4
+    문의: 0.3
+    고객사: 0.4
+    세금계산서: 0.3
+    비밀번호 재설정: 0.3
+    로그인할 수 없습니다: 0.3
+    문의했습니다: 0.3
+    support: 0.3
+    customer: 0.4
+  default_team: cs
+  required_fields:
+    - customer
+    - issue_detail
+    - required_action
+
+approval_request:
+  keywords:
+    승인: 0.4
+    결재: 0.4
+    허가: 0.3
+    결제 취소: 0.5
+    환불 처리: 0.5
+    approve: 0.4
+    permission: 0.3
+  default_team: ops
+  required_fields:
+    - approval_target
+    - scope_or_amount
+    - deadline
+
+internal_ops:
+  keywords:
+    계정: 0.3
+    권한: 0.4
+    온보딩: 0.3
+    설정: 0.2
+    삭제: 0.4
+    운영 데이터: 0.4
+    보안: 0.4
+    관리자 로그인: 0.4
+    로그인 실패: 0.3
+    접근 권한: 0.4
+    제한된 접근 권한: 0.6
+    account: 0.3
+    permission: 0.4
+    onboarding: 0.3
+  default_team: ops
+  required_fields:
+    - requested_action
+    - target_user_or_system
+
+other:
+  keywords: {}
+  default_team: unassigned
+  required_fields: []
+  fallback_only: true

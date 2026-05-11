@@ -1,0 +1,60 @@
+version: "required_fields.2026-05-11"
+
+bug_report:
+  required:
+    - symptom
+    - affected_customer_or_user
+    - impact_scope
+  optional:
+    - reproduction_steps
+    - first_seen_at
+    - environment
+
+data_request:
+  required:
+    - dataset_or_metric
+    - purpose
+    - deadline
+  optional:
+    - format
+    - delivery_channel
+    - refresh_frequency
+
+feature_request:
+  required:
+    - user_need
+    - expected_outcome
+  optional:
+    - priority_reason
+    - target_release
+
+customer_support:
+  required:
+    - customer
+    - issue_detail
+    - required_action
+  optional:
+    - contact_channel
+    - customer_tier
+
+approval_request:
+  required:
+    - approval_target
+    - scope_or_amount
+    - deadline
+  optional:
+    - approval_owner
+    - policy_reference
+
+internal_ops:
+  required:
+    - requested_action
+    - target_user_or_system
+  optional:
+    - deadline
+    - approval_owner
+
+other:
+  required: []
+  optional: []
+

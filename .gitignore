@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Local outputs
+outputs/*
+!outputs/.gitkeep
+
+# Local agent metadata
+docs/.bkit-memory.json
+docs/.pdca-status.json
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,88 @@
+version: "ticket_templates.2026-05-11"
+
+bug_report:
+  title: "[Bug] {summary}"
+  labels:
+    - bug
+    - "{priority}"
+  body_sections:
+    - summary
+    - original_request
+    - extracted_fields
+    - missing_information
+    - suggested_next_question
+    - trace
+
+data_request:
+  title: "[Data] {summary}"
+  labels:
+    - data-request
+    - "{priority}"
+  body_sections:
+    - summary
+    - requested_dataset
+    - purpose
+    - deadline
+    - missing_information
+
+feature_request:
+  title: "[Feature] {summary}"
+  labels:
+    - feature-request
+    - "{priority}"
+  body_sections:
+    - summary
+    - user_need
+    - expected_outcome
+    - priority_reason
+
+customer_support:
+  title: "[CS] {summary}"
+  labels:
+    - customer-support
+    - "{priority}"
+  body_sections:
+    - summary
+    - original_request
+    - extracted_fields
+    - missing_information
+    - suggested_next_question
+    - trace
+
+approval_request:
+  title: "[Approval] {summary}"
+  labels:
+    - approval
+    - "{priority}"
+  body_sections:
+    - summary
+    - original_request
+    - extracted_fields
+    - missing_information
+    - suggested_next_question
+    - trace
+
+internal_ops:
+  title: "[Ops] {summary}"
+  labels:
+    - internal-ops
+    - "{priority}"
+  body_sections:
+    - summary
+    - original_request
+    - extracted_fields
+    - missing_information
+    - suggested_next_question
+    - trace
+
+other:
+  title: "[Triage] {summary}"
+  labels:
+    - triage
+    - "{priority}"
+  body_sections:
+    - summary
+    - original_request
+    - missing_information
+    - suggested_next_question
+    - trace

@@ -1,0 +1,83 @@
+version: "team_mapping.2026-05-11"
+
+engineering:
+  request_types:
+    primary:
+      - bug_report
+    secondary:
+      - customer_support
+  keywords:
+    결제: 0.3
+    오류: 0.4
+    장애: 0.4
+    api: 0.3
+    latency: 0.4
+    5초 이상: 0.3
+    "403": 0.4
+    Forbidden: 0.4
+    권한 오류: 0.4
+    서버 예외: 0.3
+    error: 0.4
+
+data:
+  request_types:
+    primary:
+      - data_request
+    secondary: []
+  keywords:
+    데이터: 0.4
+    리포트: 0.3
+    쿼리: 0.3
+    매출: 0.3
+    고객사별: 0.3
+    CSV: 0.3
+    PDF: 0.3
+    data: 0.4
+    report: 0.3
+
+product:
+  request_types:
+    primary:
+      - feature_request
+    secondary:
+      - customer_support
+  keywords:
+    기능: 0.4
+    개선: 0.3
+    추가: 0.3
+    필터링: 0.4
+    필터 상태: 0.3
+    URL로 공유: 0.3
+    적용되면 좋겠습니다: 0.4
+    SQL 기반 insight: 0.4
+    위젯: 0.3
+    목표 대비: 0.3
+    달성률: 0.3
+    우선순위: 0.3
+    feature: 0.4
+
+cs:
+  request_types:
+    primary:
+      - customer_support
+    secondary:
+      - bug_report
+  keywords:
+    고객: 0.4
+    문의: 0.3
+    customer: 0.4
+
+ops:
+  request_types:
+    primary:
+      - internal_ops
+      - approval_request
+    secondary: []
+  keywords:
+    계정: 0.3
+    권한: 0.4
+    접근 권한: 0.4
+    제한된 접근 권한: 0.5
+    승인: 0.4
+    account: 0.3
+    permission: 0.4

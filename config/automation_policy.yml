@@ -1,0 +1,39 @@
+version: "automation_policy.2026-05-11"
+
+decision_order:
+  - reject
+  - review_required
+  - draft_only
+  - ready_for_approval
+
+ready_for_approval:
+  match: "ALL"
+  min_request_type_confidence: 0.85
+  min_team_confidence: 0.85
+  allow_missing_fields: false
+  max_risk_level: low
+  external_create: false
+
+draft_only:
+  match: "ALL"
+  min_request_type_confidence: 0.75
+  min_team_confidence: 0.75
+  allow_missing_fields: "optional_only"
+  max_risk_level: medium
+  requires_human_approval: true
+
+review_required:
+  match: "ANY"
+  triggers:
+    - required_missing_fields_present
+    - multiple_team_candidates
+    - low_confidence
+    - pii_detected
+    - high_risk_action
+
+reject:
+  match: "ANY"
+  triggers:
+    - unsupported_request_type
+    - policy_blocked
+    - unsafe_or_disallowed_request

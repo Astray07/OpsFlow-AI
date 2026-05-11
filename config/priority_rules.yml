@@ -1,0 +1,46 @@
+version: "priority_rules.2026-05-11"
+
+urgent:
+  keywords:
+    - 결제 불가
+    - 전체 결제
+    - 전체 고객
+    - 실패율
+    - 운영 중단
+    - 보안 사고
+    - 모든 승인 요청
+    - 환불 처리 승인
+    - 개인정보 원문
+    - outage
+    - production down
+
+high:
+  keywords:
+    - 급해요
+    - 오늘 중
+    - 배포 전에
+    - 내일까지
+    - 결제 취소
+    - 환불 상태
+    - 삭제
+    - 운영 데이터
+    - 접근 권한
+    - 제한된 접근 권한
+    - 5초 이상
+    - 15%
+    - 010-
+    - urgent
+    - today
+  metadata_conditions:
+    customer_tier:
+      - enterprise
+
+medium:
+  default: true
+
+low:
+  keywords:
+    - 참고
+    - 나중에
+    - question
+    - later

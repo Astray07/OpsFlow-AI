@@ -1,0 +1,9 @@
+request_id,expected_request_type,expected_target_team,expected_priority,expected_automation_decision,expected_missing_fields,expected_risk_level,expected_review_reason,notes,source_type
+EXT-001,bug_report,engineering,medium,review_required,affected_customer_or_user;impact_scope,low,required_missing_fields_present,"공개 issue paraphrase. 증상과 재현 환경은 있으나 영향 사용자/범위가 없음",external_seed
+EXT-002,bug_report,engineering,medium,review_required,impact_scope,low,required_missing_fields_present,"로그인 오류는 제품 동작 문제로 bug_report. 영향 범위 누락",external_seed
+EXT-003,bug_report,engineering,medium,review_required,affected_customer_or_user;impact_scope,low,required_missing_fields_present,"embedded dashboard 권한 오류 재현 정보는 있으나 영향 사용자/범위 누락",external_seed
+EXT-004,data_request,data,medium,review_required,purpose;deadline,low,required_missing_fields_present,"CSV/Excel export 데이터 요청 패턴. 목적과 마감일 누락",external_seed
+EXT-005,feature_request,product,medium,ready_for_approval,"",low,"","필터 기능 요구와 기대 결과가 명확함",external_seed
+EXT-006,feature_request,product,medium,ready_for_approval,"",low,"","대시보드 필터 적용 요구와 기대 결과가 명확함",external_seed
+EXT-007,feature_request,product,high,review_required,"",high,high_risk_action,"접근 권한 제어 기능은 side-effect 가능성이 있어 보안 검토 필요",external_seed
+EXT-008,bug_report,engineering,medium,review_required,affected_customer_or_user;impact_scope,low,required_missing_fields_present,"403 Forbidden 오류와 환경은 있으나 영향 사용자/범위 누락",external_seed

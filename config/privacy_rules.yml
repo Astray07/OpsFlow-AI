@@ -1,0 +1,22 @@
+version: "privacy_rules.2026-05-11"
+
+masking:
+  email:
+    pattern: "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
+    replacement: "[EMAIL]"
+  phone:
+    pattern: "(01[016789])-?\\d{3,4}-?\\d{4}"
+    replacement: "[PHONE]"
+  rrn_like:
+    pattern: "\\d{6}-\\d{7}"
+    replacement: "[ID_NUMBER]"
+  order_id:
+    pattern: "(ORD|ORDER)-\\d+"
+    replacement: "[ORDER_ID]"
+
+policy:
+  pii_detected_min_risk_level: medium
+  send_raw_text_to_llm: false
+  store_raw_text_local_only: true
+  person_masking: "v2"
+
