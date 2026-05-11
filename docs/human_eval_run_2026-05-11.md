@@ -41,3 +41,48 @@ API key 값은 출력하지 않았고, execution log의 오류 메시지는 `[RE
 4. outputs/human_eval_rule_only와 outputs/human_eval_llm_assist에서 같은 request_id의 suggested_ticket_body, suggested_question을 비교한다.
 5. docs/human_eval_template.md 기준으로 1~5점을 기록한다.
 ```
+
+## Retry
+
+작성일: 2026-05-11
+
+키 값을 출력하지 않고 `.env` 로딩과 OpenAI smoke test를 다시 확인했습니다.
+
+확인 결과:
+
+```text
+OPENAI_API_KEY_present: true
+OPENAI_API_KEY_prefix_ok: true
+OPENAI_API_KEY_has_outer_quotes: false
+OPSFLOW_LLM_MODEL: default(gpt-4.1-mini)
+```
+
+최소 OpenAI 호출:
+
+```text
+result: failed
+status: 401
+code: invalid_api_key
+message: Incorrect API key provided: [REDACTED_OPENAI_API_KEY]
+```
+
+파이프라인 재실행:
+
+```bash
+python -m src.main run --input data/sample_requests.csv --config config --output outputs/human_eval_llm_assist_retry --dry-run --gold data/labeled_requests.csv --enable-llm-assist
+```
+
+결과:
+
+```text
+llm_used: 0
+llm_errors: 25
+QA assertion failures: 0
+```
+
+판정:
+
+```text
+.env 파싱, prefix, 따옴표 문제는 확인되지 않았다.
+OpenAI API 서버가 해당 키를 invalid_api_key로 거절하고 있으므로, 현재 남은 원인은 키 자체가 폐기/오입력/비활성 상태인 경우가 가장 유력하다.
+```
